@@ -13,10 +13,14 @@ distutils.core.setup(
     author='Mikolaj Radwan @ Techland',
     author_email='mikolaj.radwan@techland.pl',
     url='https://github.com/techland-games/cpp-build-profiler',
+    license='MIT',
     packages=['cppbuildprofiler'],
     entry_points={
         'console_scripts': [
             'cpp-build-profiler = cppbuildprofiler.__main__:main'
             ]
-        }
+        },
+    install_requires=[
+        'networkx',
+        ],
     )
