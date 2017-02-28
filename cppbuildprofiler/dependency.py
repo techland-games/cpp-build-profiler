@@ -117,15 +117,17 @@ class DependencyGraph:
     def traverse_pre_order(self, origin=None, include_origin=False, reversed=False):
         return self._traverse(origin, nx.dfs_preorder_nodes, include_origin, reversed)
 
-    def print_csv(self, stream, metrics, column_separator):
+    def print_csv(self, stream, columns, column_separator):
         column_separator = column_separator.replace('\\t', '\t')
         column_separator = column_separator.replace('\\n', '\n')
 
-        stream.write('%s%s%s\n' %
-                     ('path', column_separator, column_separator.join(metrics)))
+        stream.write('label%s' % column_separator)
+        stream.write('%s\n' %
+                     column_separator.join(column['title']
+                                           for column in columns.values()))
         for label in self.traverse_pre_order():
             node = self._graph.node[label]
-            stream.write('%s%s%s\n' %
-                (label,
-                 column_separator,
-                 column_separator.join(str(node.get(metric, '')) for metric in metrics)))
+            stream.write('%s%s' % (label, column_separator))
+            stream.write('%s\n' % 
+                         column_separator.join(str(node.get(metric, column['default']))
+                                               for (metric, column) in columns.items()))

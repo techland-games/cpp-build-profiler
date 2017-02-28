@@ -10,6 +10,17 @@ from cppbuildprofiler import *
 
 class Interpreter(cmd.Cmd):
 
+    _CSV_COLUMNS = {
+        Analyser.ABSOLUTE_PATH_KEY: { 'title': 'absolute path', 'default': None },
+        Analyser.COMPILATION_COMMAND_KEY: { 'title': 'compilation command', 'default': '' },
+        Analyser.BUILD_TIME_KEY: { 'title': 'build time [s]', 'default': 0.0 },
+        Analyser.FILE_SIZE_KEY: { 'title': 'file size [B]', 'default': 0.0 },
+        Analyser.TOTAL_SIZE_KEY: { 'title': 'total size [B]', 'default': 0.0 },
+        Analyser.TOTAL_BUILD_TIME_KEY: { 'title': 'total build time of dependants [s]', 'default': 0.0 },
+        Analyser.TRANSLATION_UNITS_KEY: { 'title': 'number of dependent translation units', 'default': 0 },
+        Analyser.TU_BUILD_TIME_TO_SIZE_RATIO: { 'title': 'translation unit build time divided by total size sum [s/B]', 'default': 0 },
+        }
+
     def __init__(self):
         super().__init__()
         self.prompt = 'c++bp$ '
@@ -172,6 +183,7 @@ class Interpreter(cmd.Cmd):
 
     def _print_argparser(self):
         all_metrics = [
+            Analyser.ABSOLUTE_PATH_KEY,
             Analyser.TRANSLATION_UNITS_KEY,
             Analyser.FILE_SIZE_KEY,
             Analyser.TOTAL_SIZE_KEY,
@@ -179,7 +191,6 @@ class Interpreter(cmd.Cmd):
             Analyser.TOTAL_BUILD_TIME_KEY,
             Analyser.TU_BUILD_TIME_TO_SIZE_RATIO,
             ]
-
         parser = argparse.ArgumentParser('prints the dependency graph')
         parser.add_argument('--out', '-o',
                             action='store',
@@ -212,6 +223,8 @@ class Interpreter(cmd.Cmd):
             else:
                 metrics = opts.metrics
 
+            columns = { metric : self._CSV_COLUMNS[metric] for metric in metrics }
+
             if opts.out:
                 stream = open(opts.out, 'w')
             else:
@@ -220,7 +233,7 @@ class Interpreter(cmd.Cmd):
             with stream:
                 self._depgraph.print_csv(
                     stream,
-                    metrics,
+                    columns,
                     opts.column_separator)
         except SystemExit:
             return
