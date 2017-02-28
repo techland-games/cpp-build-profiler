@@ -17,9 +17,10 @@ Additional Options`
 0. Rebuild the project, copy the build output to a file
 0. Open up the command prompt and run `cpp-build-profiler`
 0. Run `parse_vs_log <i>path/to/the/log/file</i>`
-0. Clean-up some unnecessary files by running `remove_pch` and
+0. Clean-up some unnecessary files by running `remove_pch PATTERN` and
 `remove_thirdparty_dependencies PATH_TO_CODEBASE_ROOT` - the first command will remove files
-that were only included by precompiled headers, the other will remove files included by files 
+that were only included by precompiled headers (checked by looking for `PATTERN`
+in their label - defaults to `stdafx.h`), the other will remove files included by files 
 from outside of your codebase (e.g. this will not remove <vector>, but will remove <xmemory>)
 0. Run `analyse` - this will run statistics on the remaining files
 0. Run `store PATH_TO_GRAPH.gml` - this will store the dependency graph in a .gml file. You can
