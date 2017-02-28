@@ -31,6 +31,17 @@ class Analyser:
     TRANSLATION_UNITS_KEY = 'translationunits'
     TU_BUILD_TIME_TO_SIZE_RATIO = 'tubuildtimetosizeratio'
 
+    CSV_COLUMNS = {
+        ABSOLUTE_PATH_KEY: { 'title': 'absolute path', 'default': None },
+        COMPILATION_COMMAND_KEY: { 'title': 'compilation command', 'default': '' },
+        BUILD_TIME_KEY: { 'title': 'build time [s]', 'default': 0.0 },
+        FILE_SIZE_KEY: { 'title': 'file size [B]', 'default': 0.0 },
+        TOTAL_SIZE_KEY: { 'title': 'total size [B]', 'default': 0.0 },
+        TOTAL_BUILD_TIME_KEY: { 'title': 'total build time of dependants [s]', 'default': 0.0 },
+        TRANSLATION_UNITS_KEY: { 'title': 'number of dependent translation units', 'default': 0 },
+        TU_BUILD_TIME_TO_SIZE_RATIO: { 'title': 'translation unit build time divided by total size sum [s/B]', 'default': 0 },
+        }
+
     def __init__(self, dependency_graph):
         self._dependency_graph = dependency_graph
         

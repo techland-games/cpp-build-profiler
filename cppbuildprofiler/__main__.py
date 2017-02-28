@@ -13,17 +13,6 @@ from cppbuildprofiler import *
 
 class Interpreter(cmd.Cmd):
 
-    _CSV_COLUMNS = {
-        Analyser.ABSOLUTE_PATH_KEY: { 'title': 'absolute path', 'default': None },
-        Analyser.COMPILATION_COMMAND_KEY: { 'title': 'compilation command', 'default': '' },
-        Analyser.BUILD_TIME_KEY: { 'title': 'build time [s]', 'default': 0.0 },
-        Analyser.FILE_SIZE_KEY: { 'title': 'file size [B]', 'default': 0.0 },
-        Analyser.TOTAL_SIZE_KEY: { 'title': 'total size [B]', 'default': 0.0 },
-        Analyser.TOTAL_BUILD_TIME_KEY: { 'title': 'total build time of dependants [s]', 'default': 0.0 },
-        Analyser.TRANSLATION_UNITS_KEY: { 'title': 'number of dependent translation units', 'default': 0 },
-        Analyser.TU_BUILD_TIME_TO_SIZE_RATIO: { 'title': 'translation unit build time divided by total size sum [s/B]', 'default': 0 },
-        }
-
     _ALL_METRICS = [
         Analyser.ABSOLUTE_PATH_KEY,
         Analyser.TRANSLATION_UNITS_KEY,
@@ -271,7 +260,7 @@ class Interpreter(cmd.Cmd):
                 raise RuntimeError('Specify --all-metrics to print all metrics '
                                    'or a list of metrics after --metrics')
 
-            columns = { metric : self._CSV_COLUMNS[metric] for metric in metrics }
+            columns = { metric : Analyser.CSV_COLUMNS[metric] for metric in metrics }
 
             if opts.out:
                 stream = open(opts.out, 'w')
