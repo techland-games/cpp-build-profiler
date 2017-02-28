@@ -103,7 +103,7 @@ class Analyser:
                     self.TU_BUILD_TIME_TO_SIZE_RATIO,
                     current)
 
-    def remove_pch(self, pattern='_pch.h$'):
+    def remove_pch(self, pattern):
         logging.info('Removing pch files...')
         pattern = re.compile(pattern)
         to_remove = list(label for label
