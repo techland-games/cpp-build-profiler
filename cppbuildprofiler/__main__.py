@@ -145,8 +145,28 @@ class Interpreter(cmd.Cmd):
     def do_analyse(self, params):
         Analyser(self._depgraph).run_full_analysis()
 
+    def _remove_pch_argparser(self):
+        parser = argparse.ArgumentParser('removes precompiled headers from the graph')
+        parser.add_argument(
+            'label_pattern',
+            action='store',
+            help='a regex pattern that will be looked for in graph labels to '
+                 'determine whether they denote a precompiled header (defaults '
+                 'to "stdafx\\.h"',
+            default=r'stdafx\.h',
+            nargs='?')
+        return parser
+
+    def help_remove_pch(self):
+        self._remove_pch_argparser().print_help()
+
     def do_remove_pch(self, params):
-        Analyser(self._depgraph).remove_pch()
+        parser = self._remove_pch_argparser()
+        try:
+            opts = parser.parse_args(self._argv(params))
+            Analyser(self._depgraph).remove_pch(opts.label_pattern)
+        except SystemExit:
+            return
 
     def _remove_thirdparty_dependencies_argparser(self):
         parser = argparse.ArgumentParser('removes third-party header '
