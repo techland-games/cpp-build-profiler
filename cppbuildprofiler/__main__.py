@@ -24,6 +24,16 @@ class Interpreter(cmd.Cmd):
         Analyser.TU_BUILD_TIME_TO_SIZE_RATIO: { 'title': 'translation unit build time divided by total size sum [s/B]', 'default': 0 },
         }
 
+    _ALL_METRICS = [
+        Analyser.ABSOLUTE_PATH_KEY,
+        Analyser.TRANSLATION_UNITS_KEY,
+        Analyser.FILE_SIZE_KEY,
+        Analyser.TOTAL_SIZE_KEY,
+        Analyser.BUILD_TIME_KEY,
+        Analyser.TOTAL_BUILD_TIME_KEY,
+        Analyser.TU_BUILD_TIME_TO_SIZE_RATIO,
+        ]
+
     def __init__(self):
         super().__init__()
         self.prompt = 'c++bp$ '
@@ -159,6 +169,27 @@ class Interpreter(cmd.Cmd):
         except SystemExit:
             return
 
+    def _remove_node_argparser(self):
+        parser = argparse.ArgumentParser('removes a node from the dependency graph')
+        parser.add_argument(
+            'label',
+            action='store',
+            help='label of the node to remove')
+        return parser
+
+    def help_remove_node(self):
+        self._remove_node_argparser().print_help()
+
+    def do_remove_node(self, params):
+        try:
+            parser = self._remove_node_argparser()
+            opts = parser.parse_args(self._argv(params))
+            
+            self._depgraph.remove_nodes([opts.label])
+            self._depgraph.remove_orphans()
+        except SystemExit:
+            return
+
     def _subgraph_argparser(self):
         parser = argparse.ArgumentParser('creates a subgraph of the '
                                          'dependency graph')
@@ -185,28 +216,21 @@ class Interpreter(cmd.Cmd):
             return
 
     def _print_argparser(self):
-        all_metrics = [
-            Analyser.ABSOLUTE_PATH_KEY,
-            Analyser.TRANSLATION_UNITS_KEY,
-            Analyser.FILE_SIZE_KEY,
-            Analyser.TOTAL_SIZE_KEY,
-            Analyser.BUILD_TIME_KEY,
-            Analyser.TOTAL_BUILD_TIME_KEY,
-            Analyser.TU_BUILD_TIME_TO_SIZE_RATIO,
-            ]
         parser = argparse.ArgumentParser('prints the dependency graph')
         parser.add_argument('--out', '-o',
                             action='store',
                             help='file to print out to',
                             required=False)
         parser.add_argument('--metrics', '-m',
-                            help='list of metrics to print',
-                            choices=all_metrics)
+                            help='metrics to print (space separated)',
+                            nargs='*',
+                            choices=self._ALL_METRICS)
         parser.add_argument('--all-metrics', '-M',
                             action='store_const',
                             help='print all available metrics '
                                  '(without the compilation command)',
-                            const=all_metrics)
+                            const=self._ALL_METRICS,
+                            dest='metrics')
         parser.add_argument('--column-separator',
                             action='store',
                             help='column separator (defaults to ";")',
@@ -221,10 +245,11 @@ class Interpreter(cmd.Cmd):
         try:
             opts = parser.parse_args(self._argv(params))
 
-            if opts.all_metrics:
-                metrics = opts.all_metrics
-            else:
+            if opts.metrics is not None:
                 metrics = opts.metrics
+            else:
+                raise RuntimeError('Specify --all-metrics to print all metrics '
+                                   'or a list of metrics after --metrics')
 
             columns = { metric : self._CSV_COLUMNS[metric] for metric in metrics }
 

@@ -126,7 +126,7 @@ class Analyser:
             self._dependency_graph.remove_dependencies(label)
         logging.info('Removing orphaned nodes...')
         self._dependency_graph.remove_orphans()
-                         
+
     def run_full_analysis(self):
         self.calculate_file_sizes()
         self.calculate_total_sizes()
