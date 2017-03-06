@@ -122,12 +122,15 @@ class Test_parser(unittest.TestCase):
                 ]))
 
             test_cpp_node = graph.node['test.cpp']
+            self.assertEqual(test_cpp_node[Analyser.PROJECT_KEY], 'test')
             self.assertEqual(
                 test_cpp_node[Analyser.COMPILATION_COMMAND_KEY],
                 r'cl /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\" /Fd"Debug\vc140.pdb" /Gd /TP /analyze- /errorReport:prompt /Bt+ /showIncludes /nologo- /FC'
                 )
             self.assertAlmostEqual(
                 test_cpp_node[Analyser.BUILD_TIME_KEY], 0.04414)
+
+            self.assertEqual(graph.node['stdafx.cpp'][Analyser.PROJECT_KEY], 'test-lib')
 
             test_hpp_node = graph.node['test.hpp']
             self.assertNotIn(

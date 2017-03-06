@@ -34,6 +34,7 @@ class _Channel_state:
                 self.dependencies = list(map(updater, self.dependencies))
                 self.label = new_label
 
+    _PROJECT_PATTERN = re.compile(r'^\d+>[^:]+:\s+Project:\s+([^,]+),')
     _CPP_FILE_PATTERN = re.compile(r'^\d+>\s*(\w+\.c((pp)|(xx))?)')
     _DEPENDENCY_PATTERN = re.compile(r'^\d+>\s*Note: including file:(\s+)(.*)$')
     _TIME_PATTERN = re.compile(r'^\d+>\s*time[^=]+=(\d+\.\d+)s[^\[]+\[([^\]]+)\]')
@@ -42,6 +43,7 @@ class _Channel_state:
     _CPP_EXTENSION_PATTERN = re.compile(r'\.c((pp)|(xx))?$')
 
     def __init__(self):
+        self._project = None
         self._nodes = collections.defaultdict(self.Node)
         self._current_node = None
         self._cl_command = None
@@ -82,6 +84,10 @@ class _Channel_state:
                     )
         self._nodes.clear()
 
+    def _handle_project_call(self, project, dependency_graph):
+        logging.info('Parsing project %s', project)
+        self._project = project
+
     def _handle_cl_call(self, command, dependency_graph):
         self._flush(dependency_graph)
 
@@ -97,13 +103,15 @@ class _Channel_state:
     def _handle_cpp_filename(self, filename):
         label = os.path.basename(_unify_path(filename))
 
+        if not self._project:
+            raise RuntimeError('Project not set for cpp file %s in channel %d' %
+                               filename)
+
         node = self._nodes[label]
         node.label = label
+        node.attributes = { Analyser.PROJECT_KEY: self._project }
         if self._cl_command:
-            node.attributes = {
-                Analyser.COMPILATION_COMMAND_KEY: self._cl_command }
-        else:
-            node.attributes = {}
+            node.attributes[Analyser.COMPILATION_COMMAND_KEY] = self._cl_command
         self._dependency_stack = [ node.label ]
         self._current_node = node
 
@@ -138,6 +146,11 @@ class _Channel_state:
         node.attributes[Analyser.BUILD_TIME_KEY] += build_time
 
     def parse_line(self, line, dependency_graph):
+        m = self._PROJECT_PATTERN.match(line)
+        if m:
+            self._handle_project_call(m.group(1), dependency_graph)
+            return
+
         m = self._CL_PATTERN.match(line)
         if m:
             self._handle_cl_call(m.group(1), dependency_graph)

@@ -4,6 +4,7 @@
 import logging
 import os
 import re
+import networkx as nx
 
 def _unify_path(path):
     path = os.path.normpath(path)
@@ -22,6 +23,7 @@ def _pretty_filesize(size):
 
 class Analyser:
 
+    PROJECT_KEY = 'project'
     ABSOLUTE_PATH_KEY = 'absolutepath'
     COMPILATION_COMMAND_KEY = 'compilationcommand'
     BUILD_TIME_KEY = 'buildtime'
@@ -30,6 +32,7 @@ class Analyser:
     TOTAL_BUILD_TIME_KEY = 'totalbuildtime'
     TRANSLATION_UNITS_KEY = 'translationunits'
     TU_BUILD_TIME_TO_SIZE_RATIO = 'tubuildtimetosizeratio'
+    UNKNOWN_PROJECT = '__UNKNOWN__'
 
     CSV_COLUMNS = {
         ABSOLUTE_PATH_KEY: { 'title': 'absolute path', 'default': None },
@@ -45,6 +48,45 @@ class Analyser:
     def __init__(self, dependency_graph):
         self._dependency_graph = dependency_graph
         
+    def _guess_dependency_project(self, label, directory_to_project):
+        if self._dependency_graph.has_attribute(label, self.PROJECT_KEY):
+            return self._dependency_graph.get_attribute(label, self.PROJECT_KEY)
+        directory = os.path.dirname(
+            self._dependency_graph.get_attribute(label, self.ABSOLUTE_PATH_KEY))
+        while directory not in directory_to_project:
+            parent = os.path.dirname(directory)
+            if parent == directory:
+                return self.UNKNOWN_PROJECT
+            else:
+                directory = parent
+        return directory_to_project[directory]
+
+    def get_project_dependency_graph(self):
+        directory_to_project = {}
+        for cpp_node in self._dependency_graph.get_top_level_nodes():
+            directory = os.path.dirname(
+                self._dependency_graph.get_attribute(cpp_node, self.ABSOLUTE_PATH_KEY))
+            project = self._dependency_graph.get_attribute(cpp_node, self.PROJECT_KEY)
+            if directory in directory_to_project:
+                if directory_to_project[directory] != project:
+                    logging.warn('cpp file %s from project %s in directory %s '
+                                 'inconsistent with the currently stored '
+                                 'project: %s' % (cpp_node, project, directory,
+                                                  directory_to_project[project]))
+            else:
+                directory_to_project[directory] = project
+
+        graph = nx.DiGraph()
+        for node in self._dependency_graph.traverse_pre_order():
+            dependencies = self._dependency_graph.get_node_dependencies(node)
+            for dependency_node in dependencies:
+                source = self._guess_dependency_project(node, directory_to_project)
+                target = self._guess_dependency_project(dependency_node, directory_to_project)
+                if source != target:
+                    graph.add_edge(source, target)
+        
+        return graph
+
     def calculate_file_sizes(self):
         logging.info('Calculating file sizes...')
         for label in self._dependency_graph.traverse_post_order():

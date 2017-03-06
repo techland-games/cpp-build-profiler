@@ -9,6 +9,7 @@ import cmd
 import os
 import logging
 import traceback
+import networkx as nx
 from cppbuildprofiler import *
 
 class Interpreter(cmd.Cmd):
@@ -64,6 +65,26 @@ class Interpreter(cmd.Cmd):
                 logging.getLogger().setLevel(logging.DEBUG)
             elif opts.level == 'INFO':
                 logging.getLogger().setLevel(logging.INFO)
+        except SystemExit:
+            return
+
+    def _get_project_dependency_graph_argparser(self):
+        parser = argparse.ArgumentParser('builds a project dependency graph')
+        parser.add_argument(
+            'path',
+            action='store',
+            help='path to the file to write to')
+        return parser
+
+    def help_get_project_dependency_graph(self):
+        self._get_project_dependency_graph_argparser().print_help()
+
+    def do_get_project_dependency_graph(self, params):
+        parser = self._get_project_dependency_graph_argparser()
+        try:
+            opts = parser.parse_args(self._argv(params))
+            graph = Analyser(self._depgraph).get_project_dependency_graph()
+            nx.write_gml(graph, opts.path)
         except SystemExit:
             return
 
