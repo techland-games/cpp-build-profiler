@@ -239,8 +239,9 @@ class Interpreter(cmd.Cmd):
         parser = self._subgraph_argparser()
         try:
             opts = parser.parse_args(self._argv(params))
-            self._depgraph = DependencyGraph(self._depgraph.get_subgraph(
-                opts.origin, opts.dependencies, opts.dependants))
+            self._depgraph = self._depgraph.get_subgraph(opts.origin,
+                                                         opts.dependencies,
+                                                         opts.dependants)
             self._depgraph.log_stats('Created subgraph of %s' % opts.origin)
         except SystemExit:
             return

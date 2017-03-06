@@ -59,7 +59,12 @@ class DependencyGraph:
             dependants = self.traverse_pre_order(label, reversed=True)
             nodes = itertools.chain(nodes, dependants)
 
-        return self._graph.subgraph(nodes)
+        subgraph = self._graph.subgraph(nodes)
+
+        if not add_dependants:
+            subgraph.add_path([self._ROOT_NODE_LABEL, label])
+
+        return DependencyGraph(subgraph)
 
     def has_node(self, label):
         return self._graph.has_node(label)
