@@ -99,8 +99,7 @@ class TestDependency(unittest.TestCase):
         depgraph.add_top_level_node('a.cpp', intattr=0)
         self.assertEqual(depgraph.get_attribute('a.cpp', 'intattr'), 0)
         self.assertFalse(depgraph.has_attribute('a.cpp', 'charattr'))
-        with self.assertRaises(KeyError):
-            depgraph.get_attribute('a.cpp', 'charattr')
+        self.assertIsNone(depgraph.get_attribute('a.cpp', 'charattr'))
         depgraph.set_attribute('a.cpp', 'charattr', 'a')
         self.assertTrue(depgraph.has_attribute('a.cpp', 'charattr'))
         depgraph.set_attribute('a.cpp', 'intattr', 1)

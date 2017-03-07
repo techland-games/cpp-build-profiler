@@ -1,6 +1,8 @@
 # Copyright (c) Techland. All rights reserved.
 # Licensed under the MIT License. See License.txt in the project root for license information.
 
+"""Contains the Analyser class, used to run analysis on the dependency graph."""
+
 import logging
 import os
 import re
@@ -22,6 +24,7 @@ def _pretty_filesize(size):
     return '%0.2f%sB' % (reduced_size, prefixes[prefix_idx])
 
 class Analyser:
+    """Performs an optimisation-related analysis on a dependency graph."""
 
     PROJECT_KEY = 'project'
     ABSOLUTE_PATH_KEY = 'absolutepath'
@@ -66,6 +69,10 @@ class Analyser:
         return directory_to_project[directory]
 
     def get_project_dependency_graph(self):
+        """
+        Builds a dependency graph showing relations between projects. This is
+        a networkx DiGraph, not a DependencyGraph.
+        """
         directory_to_project = {}
         for cpp_node in self._dependency_graph.get_top_level_nodes():
             directory = os.path.dirname(
@@ -82,7 +89,7 @@ class Analyser:
 
         graph = nx.DiGraph()
         for node in self._dependency_graph.traverse_pre_order():
-            dependencies = self._dependency_graph.get_node_dependencies(node)
+            dependencies = self._dependency_graph.get_node_immediate_dependencies(node)
             for dependency_node in dependencies:
                 source = self._guess_dependency_project(node, directory_to_project)
                 target = self._guess_dependency_project(dependency_node, directory_to_project)
@@ -92,6 +99,10 @@ class Analyser:
         return graph
 
     def calculate_file_sizes(self):
+        """
+        Calculates file sizes of individual files by checking the disk
+        usage for files pointed to by ABSOLUTE_PATH_KEY in the DependencyGraph.
+        """
         logging.info('Calculating file sizes...')
         for label in self._dependency_graph.traverse_post_order():
             path = self._dependency_graph.get_attribute(label,
@@ -103,6 +114,10 @@ class Analyser:
                           label, _pretty_filesize(file_size))
 
     def calculate_total_sizes(self):
+        """
+        Calculates "total" sizes of files. This is the file size of the node
+        plus the sizes of all its dependencies. 
+        """
         logging.info('Calculating total sizes...')
         for label in self._dependency_graph.traverse_post_order():
             subtree_size = 0
@@ -116,6 +131,11 @@ class Analyser:
                           _pretty_filesize(subtree_size))
 
     def calculate_total_build_times(self):
+        """
+        Calculates the "total build time" metric. The total build time for a
+        dependency node is the sum of build times of all its dependant top-level
+        nodes.
+        """
         logging.info('Calculating total build times...')
         for label in self._dependency_graph.get_top_level_nodes():
             build_time = self._dependency_graph.get_attribute(
@@ -132,6 +152,10 @@ class Analyser:
                     current)
 
     def calculate_translation_units(self):
+        """
+        Calculates the "translation units" metric. The metric value for
+        dependency nodes is the number of dependant top-level nodes.
+        """
         logging.info('Calculating translation units...')
         for label in self._dependency_graph.get_top_level_nodes():
             subtree = self._dependency_graph.traverse_pre_order(label)
@@ -145,6 +169,11 @@ class Analyser:
                     current)
 
     def calculate_tu_build_time_to_size(self):
+        """
+        Calculates the "translation unit build time to size ratio" metric.
+        The metric value for a dependency node is the sum of all translation
+        unit build time divided by total size ratios.
+        """
         logging.info('Calculating translation units build time to size ratio...')
         for label in self._dependency_graph.get_top_level_nodes():
             build_time = self._dependency_graph.get_attribute(label, self.BUILD_TIME_KEY)
@@ -161,6 +190,7 @@ class Analyser:
                     current)
 
     def remove_pch(self, pattern):
+        """Removes all nodes with labels mathing the regex pattern."""
         logging.info('Removing pch files...')
         pattern = re.compile(pattern)
         to_remove = list(label for label 
@@ -177,6 +207,7 @@ class Analyser:
                      codebase_root]) != codebase_root)
 
     def remove_thirdparty_dependencies(self, codebase_root):
+        """"Removes dependencies of files with paths outside the codebase"""
         logging.info('Removing third-party dependencies...')
         codebase_root = _unify_path(codebase_root)
         thirdparty_parents = list(self._get_thirdparty_dependencies)
@@ -187,6 +218,7 @@ class Analyser:
         self._dependency_graph.remove_orphans()
 
     def run_full_analysis(self):
+        """Calculates all available metrics for the graph"""
         self.calculate_file_sizes()
         self.calculate_total_sizes()
         self.calculate_total_build_times()

@@ -1,6 +1,11 @@
 # Copyright (c) Techland. All rights reserved.
 # Licensed under the MIT License. See License.txt in the project root for license information.
 
+"""
+The parser module is responsible for parsing build log files and constructing
+dependency graphs off them.
+"""
+
 import logging
 import argparse
 import os
@@ -176,6 +181,11 @@ class _Channel_state:
         self._flush(dependency_graph)
 
 def parse_vs_log(build_log_path):
+    """
+    Parses a visual studio log pointed to by the build_log_path and returns
+    a dependency graph for the built projects. To get a fully-fledged graph
+    make sure to add "/Bt+ /showIncludes /nologo- /FC" to the compiler options.
+    """
     dependency_graph = DependencyGraph()
     channels = collections.defaultdict(_Channel_state)
 
