@@ -55,7 +55,7 @@ class _Channel_state:
         suffix = ''
         index = 0
         while dependency_graph.has_node(base + suffix) and \
-                dependency_graph.get_attribute(
+            dependency_graph.get_attribute(
                     base + suffix, Analyser.ABSOLUTE_PATH_KEY) != absolute_path:
             index += 1
             suffix = '_%d' % index
@@ -63,7 +63,7 @@ class _Channel_state:
 
     def _flush(self, dependency_graph):
         for n in self._nodes.values():
-            absolute_path=n.label
+            absolute_path = n.label
             n.label = self._unique_label(absolute_path, dependency_graph)
             n.attributes[Analyser.ABSOLUTE_PATH_KEY] = absolute_path
             logging.debug('Adding top level file %s %s',
@@ -73,9 +73,9 @@ class _Channel_state:
                 **n.attributes)
             for (parent, child) in n.dependencies:
                 parent = self._unique_label(parent, dependency_graph)
-                child_path=child
+                child_path = child
                 child = self._unique_label(child_path, dependency_graph)
-                attributes = { Analyser.ABSOLUTE_PATH_KEY: child_path }
+                attributes = {Analyser.ABSOLUTE_PATH_KEY: child_path}
                 logging.debug('Adding dependency %s -> %s %s', parent, child, attributes)
                 dependency_graph.add_dependency_node(
                     parent,
@@ -92,7 +92,6 @@ class _Channel_state:
         self._flush(dependency_graph)
 
         cl_files = re.findall(self._CL_CPP_FILENAME_PATTERN, command)
-        # TODO: check duplicated filenames
         cl_files = list(map(
             lambda m: os.path.basename(_unify_path(m[0])), cl_files))
         self._cl_files = cl_files
@@ -109,15 +108,15 @@ class _Channel_state:
 
         node = self._nodes[label]
         node.label = label
-        node.attributes = { Analyser.PROJECT_KEY: self._project }
+        node.attributes = {Analyser.PROJECT_KEY: self._project}
         if self._cl_command:
             node.attributes[Analyser.COMPILATION_COMMAND_KEY] = self._cl_command
-        self._dependency_stack = [ node.label ]
+        self._dependency_stack = [node.label]
         self._current_node = node
 
         if self._cl_files and label not in self._cl_files:
             raise RuntimeError('Compiled file "%s" not found in cl compiled '
-                'files: %s' % (label, self._cl_files))
+                               'files: %s' % (label, self._cl_files))
 
     def _handle_dependency(self, depth, dependency_path):
         dependency_path = _unify_path(dependency_path)

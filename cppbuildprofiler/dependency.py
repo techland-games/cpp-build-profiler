@@ -2,7 +2,6 @@
 # Licensed under the MIT License. See License.txt in the project root for license information.
 
 import logging
-import os
 import itertools
 import networkx as nx
 from cppbuildprofiler.analysis import _unify_path
@@ -19,9 +18,7 @@ class DependencyGraph:
 
     @classmethod
     def read(cls, path):
-        result = DependencyGraph()
-        result._graph = nx.read_gml(path)
-        return result
+        return DependencyGraph(nx.read_gml(path))
         
     def write(self, path):
         nx.write_gml(self._graph, path)
@@ -51,12 +48,12 @@ class DependencyGraph:
         if not self._graph.has_node(label):
             raise RuntimeError('Node "%s" not found' % label)
 
-        nodes = [label]
+        nodes = itertools.chain(label)
         if add_dependencies:
             dependencies = self.traverse_pre_order(label)
             nodes = itertools.chain(nodes, dependencies)
         if add_dependants:
-            dependants = self.traverse_pre_order(label, reversed=True)
+            dependants = self.traverse_pre_order(label, reverse=True)
             nodes = itertools.chain(nodes, dependants)
 
         subgraph = self._graph.subgraph(nodes)
@@ -72,14 +69,13 @@ class DependencyGraph:
     def add_dependency_node(self, parent, label, **kwargs):
         if not self._graph.has_node(parent):
             raise RuntimeError('Dependency node parent "%s" not found for label "%s"' %
-                (parent, label))
+                               (parent, label))
         self._graph.add_node(label, **kwargs)
         self._graph.add_edge(parent, label)
 
     def remove_dependencies(self, parent):
         if not self._graph.has_node(parent):
-            raise RuntimeError('Dependency node parent "%s" not found for label "%s"' %
-                (parent, label))
+            raise RuntimeError('Label "%s" not found' % parent)
         for child in self._graph.successors(parent):
             logging.debug('Removing %s -> %s dependency', parent, child)
             self._graph.remove_edge(parent, child)
@@ -88,15 +84,15 @@ class DependencyGraph:
         removed = 0
         for label in labels:
             removed += 1
-            logging.debug('Removing %s' % label)
+            logging.debug('Removing %s', label)
             self._graph.remove_node(label)
-        logging.info('Removed %d nodes' % removed)
+        logging.info('Removed %d nodes', removed)
 
     def remove_orphans(self):
         pre_nodes = self._graph.number_of_nodes()
         self._graph = self._graph.subgraph(
             nx.dfs_postorder_nodes(self._graph, self._ROOT_NODE_LABEL))
-        logging.info('Removed %d orphaned nodes' %
+        logging.info('Removed %d orphaned nodes',
                      (pre_nodes - self._graph.number_of_nodes()))
 
     def has_attribute(self, label, key):
@@ -110,20 +106,20 @@ class DependencyGraph:
     def set_attribute(self, label, key, value):
         self._graph.node[label][key] = value
 
-    def _traverse(self, origin, method, include_origin, reversed):
+    def _traverse(self, origin, method, include_origin, reverse):
         if not origin:
             origin = self._ROOT_NODE_LABEL
         graph = self._graph
-        if reversed:
+        if reverse:
             graph = nx.reverse(graph)
         nodes = method(graph, origin)
         return (node for node in nodes if node != origin or include_origin)
 
-    def traverse_post_order(self, origin=None, include_origin=False, reversed=False):
-        return self._traverse(origin, nx.dfs_postorder_nodes, include_origin, reversed)
+    def traverse_post_order(self, origin=None, include_origin=False, reverse=False):
+        return self._traverse(origin, nx.dfs_postorder_nodes, include_origin, reverse)
 
-    def traverse_pre_order(self, origin=None, include_origin=False, reversed=False):
-        return self._traverse(origin, nx.dfs_preorder_nodes, include_origin, reversed)
+    def traverse_pre_order(self, origin=None, include_origin=False, reverse=False):
+        return self._traverse(origin, nx.dfs_preorder_nodes, include_origin, reverse)
 
     def print_csv(self, stream, columns, column_separator):
         column_separator = column_separator.replace('\\t', '\t')

@@ -13,7 +13,7 @@ def _unify_path(path):
 
 def _pretty_filesize(size):
     reduced_size = float(size)
-    prefixes = [ '', 'K', 'M', 'G' ]
+    prefixes = ['', 'K', 'M', 'G']
     prefix_idx = 0
     while reduced_size >= 1000.0:
         reduced_size *= 0.001
@@ -35,19 +35,23 @@ class Analyser:
     UNKNOWN_PROJECT = '__UNKNOWN__'
 
     CSV_COLUMNS = {
-        ABSOLUTE_PATH_KEY: { 'title': 'absolute path', 'default': None },
-        COMPILATION_COMMAND_KEY: { 'title': 'compilation command', 'default': '' },
-        BUILD_TIME_KEY: { 'title': 'build time [s]', 'default': 0.0 },
-        FILE_SIZE_KEY: { 'title': 'file size [B]', 'default': 0.0 },
-        TOTAL_SIZE_KEY: { 'title': 'total size [B]', 'default': 0.0 },
-        TOTAL_BUILD_TIME_KEY: { 'title': 'total build time of dependants [s]', 'default': 0.0 },
-        TRANSLATION_UNITS_KEY: { 'title': 'number of dependent translation units', 'default': 0 },
-        TU_BUILD_TIME_TO_SIZE_RATIO: { 'title': 'translation unit build time divided by total size sum [s/B]', 'default': 0 },
+        ABSOLUTE_PATH_KEY: {'title': 'absolute path', 'default': None},
+        COMPILATION_COMMAND_KEY: {'title': 'compilation command', 'default': ''},
+        BUILD_TIME_KEY: {'title': 'build time [s]', 'default': 0.0},
+        FILE_SIZE_KEY: {'title': 'file size [B]', 'default': 0.0},
+        TOTAL_SIZE_KEY: {'title': 'total size [B]', 'default': 0.0},
+        TOTAL_BUILD_TIME_KEY: {'title': 'total build time of dependants [s]',
+                               'default': 0.0},
+        TRANSLATION_UNITS_KEY: {'title': 'number of dependent translation units',
+                                'default': 0},
+        TU_BUILD_TIME_TO_SIZE_RATIO: {'title': 'translation unit build time '
+                                               'divided by total size sum [s/B]',
+                                      'default': 0},
         }
 
     def __init__(self, dependency_graph):
         self._dependency_graph = dependency_graph
-        
+    
     def _guess_dependency_project(self, label, directory_to_project):
         if self._dependency_graph.has_attribute(label, self.PROJECT_KEY):
             return self._dependency_graph.get_attribute(label, self.PROJECT_KEY)
@@ -69,10 +73,10 @@ class Analyser:
             project = self._dependency_graph.get_attribute(cpp_node, self.PROJECT_KEY)
             if directory in directory_to_project:
                 if directory_to_project[directory] != project:
-                    logging.warn('cpp file %s from project %s in directory %s '
-                                 'inconsistent with the currently stored '
-                                 'project: %s' % (cpp_node, project, directory,
-                                                  directory_to_project[project]))
+                    logging.error('cpp file %s from project %s in directory %s '
+                                  'inconsistent with the currently stored '
+                                  'project: %s', cpp_node, project, directory,
+                                  directory_to_project[project])
             else:
                 directory_to_project[directory] = project
 
@@ -140,7 +144,7 @@ class Analyser:
                     self.TRANSLATION_UNITS_KEY,
                     current)
 
-    def calculate_translation_units_build_time_to_size_ratio(self):
+    def calculate_tu_build_time_to_size(self):
         logging.info('Calculating translation units build time to size ratio...')
         for label in self._dependency_graph.get_top_level_nodes():
             build_time = self._dependency_graph.get_attribute(label, self.BUILD_TIME_KEY)
@@ -159,21 +163,23 @@ class Analyser:
     def remove_pch(self, pattern):
         logging.info('Removing pch files...')
         pattern = re.compile(pattern)
-        to_remove = list(label for label
-                     in self._dependency_graph.traverse_post_order()
-                     if len(pattern.findall(label)))
+        to_remove = list(label for label 
+                         in self._dependency_graph.traverse_post_order()
+                         if len(pattern.findall(label)))
         self._dependency_graph.remove_nodes(to_remove)
         logging.info('Removing orphaned nodes...')
         self._dependency_graph.remove_orphans()
 
+    def _get_thirdparty_dependencies(self, codebase_root):
+        return (label for label in self._dependency_graph.traverse_post_order()
+                if os.path.commonprefix(
+                    [self._dependency_graph.get_attribute(label, self.ABSOLUTE_PATH_KEY), 
+                     codebase_root]) != codebase_root)
+
     def remove_thirdparty_dependencies(self, codebase_root):
         logging.info('Removing third-party dependencies...')
         codebase_root = _unify_path(codebase_root)
-        thirdparty_parents = list(label for label
-            in self._dependency_graph.traverse_post_order()
-            if os.path.commonprefix(
-                [self._dependency_graph.get_attribute(label, self.ABSOLUTE_PATH_KEY),
-                 codebase_root]) != codebase_root)
+        thirdparty_parents = list(self._get_thirdparty_dependencies)
         for label in thirdparty_parents:
             logging.debug('Removing dependencies of %s', label)
             self._dependency_graph.remove_dependencies(label)
@@ -185,4 +191,4 @@ class Analyser:
         self.calculate_total_sizes()
         self.calculate_total_build_times()
         self.calculate_translation_units()
-        self.calculate_translation_units_build_time_to_size_ratio()
+        self.calculate_tu_build_time_to_size()

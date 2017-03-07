@@ -157,7 +157,7 @@ class Test_analysis(unittest.TestCase):
         analyser = Analyser(self._dependency_graph)
         analyser.calculate_file_sizes()
         analyser.calculate_total_sizes()
-        analyser.calculate_translation_units_build_time_to_size_ratio()
+        analyser.calculate_tu_build_time_to_size()
 
         self.assertFalse(self._dependency_graph.has_attribute(
             'a.cpp',
