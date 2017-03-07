@@ -4,14 +4,14 @@
 import unittest
 import tempfile
 import os
-from cppbuildprofiler import *
+from cppbuildprofiler import Analyser, DependencyGraph
 
-class Test_analysis(unittest.TestCase):
+class TestAnalysis(unittest.TestCase):
 
     def _create_file(self, prefix, size):
         filename = tempfile.mktemp(prefix=prefix)
-        with open(filename, 'w') as f:
-            f.write('.' * size)
+        with open(filename, 'w') as output_file:
+            output_file.write('.' * size)
         self._files[prefix] = filename
         return filename
 
@@ -32,35 +32,35 @@ class Test_analysis(unittest.TestCase):
 
         self._dependency_graph.add_top_level_node(
             'a.cpp',
-            **{ Analyser.BUILD_TIME_KEY: 3.0,
-               Analyser.ABSOLUTE_PATH_KEY: self._create_file('a.cpp', 100) })
+            **{Analyser.BUILD_TIME_KEY: 3.0,
+               Analyser.ABSOLUTE_PATH_KEY: self._create_file('a.cpp', 100)})
         self._dependency_graph.add_dependency_node(
             'a.cpp', 'a.hpp',
-            **{ Analyser.ABSOLUTE_PATH_KEY: self._create_file('a.hpp', 10) })
+            **{Analyser.ABSOLUTE_PATH_KEY: self._create_file('a.hpp', 10)})
         libhpp_path = self._create_file('lib.hpp', 20)
         self._dependency_graph.add_dependency_node(
             'a.hpp', 'lib.hpp',
-            **{ Analyser.ABSOLUTE_PATH_KEY: libhpp_path })
+            **{Analyser.ABSOLUTE_PATH_KEY: libhpp_path})
 
         self._dependency_graph.add_top_level_node(
             'b.cpp',
-            **{ Analyser.BUILD_TIME_KEY: 5.0,
-               Analyser.ABSOLUTE_PATH_KEY: self._create_file('b.cpp', 30) })
+            **{Analyser.BUILD_TIME_KEY: 5.0,
+               Analyser.ABSOLUTE_PATH_KEY: self._create_file('b.cpp', 30)})
         self._dependency_graph.add_dependency_node(
             'b.cpp', 'pch.h',
-            **{ Analyser.ABSOLUTE_PATH_KEY: self._create_file('pch.h', 50) })
+            **{Analyser.ABSOLUTE_PATH_KEY: self._create_file('pch.h', 50)})
         self._dependency_graph.add_dependency_node(
             'pch.h', 'lib.hpp',
-            **{ Analyser.ABSOLUTE_PATH_KEY: libhpp_path })
+            **{Analyser.ABSOLUTE_PATH_KEY: libhpp_path})
         self._dependency_graph.add_dependency_node(
             'pch.h', 'other.hpp',
-            **{ Analyser.ABSOLUTE_PATH_KEY: self._create_file('other.hpp', 50) })
+            **{Analyser.ABSOLUTE_PATH_KEY: self._create_file('other.hpp', 50)})
 
     def tearDown(self):
-        for f in self._files.values():
-            os.unlink(f)
+        for output_file in self._files.values():
+            os.unlink(output_file)
 
-    def test_calculates_individual_file_sizes(self):
+    def test_individual_file_sizes(self):
         analyser = Analyser(self._dependency_graph)
         analyser.calculate_file_sizes()
 
@@ -83,7 +83,7 @@ class Test_analysis(unittest.TestCase):
             self._dependency_graph.get_attribute('other.hpp', Analyser.FILE_SIZE_KEY),
             50)
 
-    def test_calculates_total_file_sizes(self):
+    def test_total_file_sizes(self):
         analyser = Analyser(self._dependency_graph)
         analyser.calculate_file_sizes()
         analyser.calculate_total_sizes()
@@ -107,7 +107,7 @@ class Test_analysis(unittest.TestCase):
             self._dependency_graph.get_attribute('other.hpp', Analyser.TOTAL_SIZE_KEY),
             50)
 
-    def test_calculates_total_build_times(self):
+    def test_total_build_times(self):
         analyser = Analyser(self._dependency_graph)
         analyser.calculate_total_build_times()
 
@@ -130,7 +130,7 @@ class Test_analysis(unittest.TestCase):
             self._dependency_graph.get_attribute('other.hpp', Analyser.TOTAL_BUILD_TIME_KEY),
             5.0)
 
-    def test_calculate_translation_units(self):
+    def test_translation_units(self):
         analyser = Analyser(self._dependency_graph)
         analyser.calculate_translation_units()
 
@@ -153,7 +153,7 @@ class Test_analysis(unittest.TestCase):
             self._dependency_graph.get_attribute('other.hpp', Analyser.TRANSLATION_UNITS_KEY),
             1)
 
-    def test_calculate_total_translation_units_size(self):
+    def test_total_tu_size(self):
         analyser = Analyser(self._dependency_graph)
         analyser.calculate_file_sizes()
         analyser.calculate_total_sizes()

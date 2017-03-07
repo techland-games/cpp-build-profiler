@@ -4,9 +4,9 @@
 import unittest
 import tempfile
 import os
-from cppbuildprofiler import *
+from cppbuildprofiler import parse_vs_log, Analyser
 
-class Test_parser(unittest.TestCase):
+class TestParser(unittest.TestCase):
 
     # result of building a project with the following cl options:
     # /Bt+ /showIncludes /nologo- /FC
@@ -92,8 +92,8 @@ class Test_parser(unittest.TestCase):
     def test_parses_full_vs_log(self):
         log_path = tempfile.mktemp()
         try:
-            with open(log_path, 'w') as f:
-                f.write(self._FULL_LOG)
+            with open(log_path, 'w') as output_file:
+                output_file.write(self._FULL_LOG)
             depgraph = parse_vs_log(log_path)
 
             graph = depgraph._graph
@@ -125,7 +125,7 @@ class Test_parser(unittest.TestCase):
             self.assertEqual(test_cpp_node[Analyser.PROJECT_KEY], 'test')
             self.assertEqual(
                 test_cpp_node[Analyser.COMPILATION_COMMAND_KEY],
-                r'cl /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\" /Fd"Debug\vc140.pdb" /Gd /TP /analyze- /errorReport:prompt /Bt+ /showIncludes /nologo- /FC'
+                r'''cl /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\" /Fd"Debug\vc140.pdb" /Gd /TP /analyze- /errorReport:prompt /Bt+ /showIncludes /nologo- /FC'''
                 )
             self.assertAlmostEqual(
                 test_cpp_node[Analyser.BUILD_TIME_KEY], 0.04414)
@@ -143,8 +143,8 @@ class Test_parser(unittest.TestCase):
     def test_parses_minimal_vs_log(self):
         log_path = tempfile.mktemp()
         try:
-            with open(log_path, 'w') as f:
-                f.write(self._MINIMAL_LOG)
+            with open(log_path, 'w') as output_file:
+                output_file.write(self._MINIMAL_LOG)
             depgraph = parse_vs_log(log_path)
 
             graph = depgraph._graph
@@ -174,8 +174,8 @@ class Test_parser(unittest.TestCase):
     def test_handles_duplicated_labels(self):
         log_path = tempfile.mktemp()
         try:
-            with open(log_path, 'w') as f:
-                f.write(self._DUPLICATED_LABELS_LOG)
+            with open(log_path, 'w') as output_file:
+                output_file.write(self._DUPLICATED_LABELS_LOG)
             depgraph = parse_vs_log(log_path)
 
             graph = depgraph._graph

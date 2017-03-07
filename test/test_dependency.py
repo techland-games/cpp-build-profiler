@@ -1,13 +1,12 @@
 # Copyright (c) Techland. All rights reserved.
 # Licensed under the MIT License. See License.txt in the project root for license information.
 
-import cppbuildprofiler
 import unittest
 import tempfile
 import os
-from cppbuildprofiler import *
+from cppbuildprofiler import DependencyGraph
 
-class Test_dependency(unittest.TestCase):
+class TestDependency(unittest.TestCase):
 
     def test_adds_top_level_nodes(self):
         depgraph = DependencyGraph()
