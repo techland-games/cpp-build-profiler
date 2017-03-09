@@ -6,11 +6,20 @@ Contains the DependencyGraph class which holds the dependency between compiled
 files and their analysis metric values.
 """
 
+import os
 import re
 import logging
 import itertools
 import networkx as nx
-from cppbuildprofiler.analysis import _unify_path
+
+def unify_path(path):
+    """
+    All paths added to the graph should go through this function to make sure
+    same paths get stored with the same path string.
+    """
+    path = os.path.normpath(path)
+    path = os.path.normcase(path)
+    return path
 
 class DependencyGraph:
 
@@ -81,7 +90,7 @@ class DependencyGraph:
         label. If add_dependants is false, the graph root node is reattached
         to the origin node which becomes the sole top-level node.
         """
-        label = _unify_path(label)
+        label = unify_path(label)
         if not self._graph.has_node(label):
             raise RuntimeError('Node "%s" not found' % label)
 

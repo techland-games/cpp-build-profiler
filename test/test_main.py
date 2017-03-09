@@ -252,7 +252,7 @@ class TestMain(unittest.TestCase):
             interpreter_load_store = __main__.Interpreter()
             interpreter_load_store.onecmd(r'load %s' % pre_graph_file)
             interpreter_load_store.onecmd(r'remove_nodes --absolute-path stdafx')
-            interpreter_load_store.onecmd(r'remove_thirdparty_dependencies d:\work\test')
+            interpreter_load_store.onecmd(r'remove_thirdparty_dependencies D:/work/test')
             interpreter_load_store.onecmd(r'store %s' % graph_file)
 
             result = DependencyGraph.read(graph_file)

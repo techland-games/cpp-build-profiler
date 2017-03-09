@@ -10,10 +10,12 @@ and perform the profiling interactively via the command line.
 
 from cppbuildprofiler.analysis import Analyser
 from cppbuildprofiler.dependency import DependencyGraph
+from cppbuildprofiler.dependency import unify_path
 from cppbuildprofiler.parser import parse_vs_log
 
 __all__ = [
     'Analyser',
     'DependencyGraph',
+    'unify_path',
     'parse_vs_log',
     ]

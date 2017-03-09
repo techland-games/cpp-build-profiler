@@ -7,11 +7,6 @@ import logging
 import os
 import networkx as nx
 
-def _unify_path(path):
-    path = os.path.normpath(path)
-    path = os.path.normcase(path)
-    return path
-
 def _pretty_filesize(size):
     reduced_size = float(size)
     prefixes = ['', 'K', 'M', 'G']

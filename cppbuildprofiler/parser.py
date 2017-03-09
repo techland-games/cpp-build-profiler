@@ -12,8 +12,8 @@ import os
 import re
 import collections
 import functools
-from cppbuildprofiler.dependency import DependencyGraph
-from cppbuildprofiler.analysis import Analyser, _unify_path
+from cppbuildprofiler.dependency import DependencyGraph, unify_path
+from cppbuildprofiler.analysis import Analyser
 
 _CHANNEL_PATTERN = re.compile(r'^(\d+)>')
 
@@ -98,14 +98,14 @@ class _Channel_state:
 
         cl_files = re.findall(self._CL_CPP_FILENAME_PATTERN, command)
         cl_files = list(map(
-            lambda m: os.path.basename(_unify_path(m[0])), cl_files))
+            lambda m: os.path.basename(unify_path(m[0])), cl_files))
         self._cl_files = cl_files
 
         cl_no_files = re.sub(self._CL_CPP_FILENAME_PATTERN, '', command)
         self._cl_command = cl_no_files
 
     def _handle_cpp_filename(self, filename):
-        label = os.path.basename(_unify_path(filename))
+        label = os.path.basename(unify_path(filename))
 
         if not self._project:
             raise RuntimeError('Project not set for cpp file %s in channel %d' %
@@ -124,7 +124,7 @@ class _Channel_state:
                                'files: %s' % (label, self._cl_files))
 
     def _handle_dependency(self, depth, dependency_path):
-        dependency_path = _unify_path(dependency_path)
+        dependency_path = unify_path(dependency_path)
 
         while len(self._dependency_stack) > depth:
             self._dependency_stack.pop()
@@ -174,7 +174,7 @@ class _Channel_state:
         if m:
             self._handle_time(
                 float(m.group(1)),
-                _unify_path(m.group(2)))
+                unify_path(m.group(2)))
             return
 
     def end(self, dependency_graph):

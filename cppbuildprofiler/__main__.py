@@ -211,9 +211,10 @@ class Interpreter(cmd.Cmd):
         try:
             parser = self._remove_thirdparty_dependencies_argparser()
             opts = parser.parse_args(self._argv(params))
+            codebase_root = unify_path(opts.codebase_root)
 
             self._depgraph.remove_dependency_by_predicate(
-                functools.partial(self._is_thirdparty_dependency, opts.codebase_root))
+                functools.partial(self._is_thirdparty_dependency, codebase_root))
             self._depgraph.remove_orphans()
         except SystemExit:
             return
