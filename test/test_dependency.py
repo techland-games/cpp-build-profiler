@@ -152,5 +152,23 @@ class TestDependency(unittest.TestCase):
             parent == 'bad-parent' and
             depgraph.get_attribute(child, 'good', True) == False)
 
+    def test_subgraph_dependencies(self):
+        depgraph = DependencyGraph()
+        depgraph.add_top_level_node('a.cpp')
+        depgraph.add_dependency_node('a.cpp', 'a.hpp')
+        depgraph.add_dependency_node('a.cpp', 'b.hpp')
+        depgraph.add_dependency_node('a.cpp', 'c.hpp')
+        depgraph.add_dependency_node('b.hpp', 'c.hpp')
+        
+        subgraph = depgraph.get_subgraph('b.hpp', True, False)
+
+        self.assertEqual(
+            sorted(subgraph._graph.nodes()),
+            sorted([DependencyGraph._ROOT_NODE_LABEL, 'b.hpp', 'c.hpp']))
+        self.assertEqual(
+            sorted(subgraph._graph.edges()),
+            sorted([(DependencyGraph._ROOT_NODE_LABEL, 'b.hpp'),
+                    ('b.hpp', 'c.hpp')]))
+
 if __name__ == '__main__':
     unittest.main()

@@ -90,11 +90,10 @@ class DependencyGraph:
         label. If add_dependants is false, the graph root node is reattached
         to the origin node which becomes the sole top-level node.
         """
-        label = unify_path(label)
         if not self._graph.has_node(label):
             raise RuntimeError('Node "%s" not found' % label)
 
-        nodes = itertools.chain(label)
+        nodes = itertools.chain([label])
         if add_dependencies:
             dependencies = self.traverse_pre_order(label)
             nodes = itertools.chain(nodes, dependencies)
