@@ -9,6 +9,7 @@ import cmd
 import os
 import logging
 import traceback
+import functools
 import networkx as nx
 from cppbuildprofiler import *
 
@@ -155,26 +156,36 @@ class Interpreter(cmd.Cmd):
     def do_analyse(self, params):
         Analyser(self._depgraph).run_full_analysis()
 
-    def _remove_pch_argparser(self):
+    def _remove_nodes_argparser(self):
         parser = argparse.ArgumentParser('removes precompiled headers from the graph')
         parser.add_argument(
-            'label_pattern',
+            '--label',
             action='store',
-            help='a regex pattern that will be looked for in graph labels to '
-                 'determine whether they denote a precompiled header (defaults '
-                 'to "stdafx\\.h"',
-            default=r'stdafx\.h',
+            help='a regex pattern for labels of nodes to remove',
+            nargs='?')
+        parser.add_argument(
+            '--absolute-path',
+            action='store',
+            help='a regex pattern for the absolute path of nodes to remove',
             nargs='?')
         return parser
 
-    def help_remove_pch(self):
-        self._remove_pch_argparser().print_help()
+    def help_remove_nodes(self):
+        self._remove_nodes_argparser().print_help()
 
-    def do_remove_pch(self, params):
-        parser = self._remove_pch_argparser()
+    def do_remove_nodes(self, params):
+        parser = self._remove_nodes_argparser()
         try:
             opts = parser.parse_args(self._argv(params))
-            Analyser(self._depgraph).remove_pch(opts.label_pattern)
+
+            args = {}
+            if opts.label:
+                args['label'] = opts.label
+            if opts.absolute_path:
+                args[Analyser.ABSOLUTE_PATH_KEY] = opts.absolute_path
+
+            self._depgraph.remove_matching_nodes(**args)
+            self._depgraph.remove_orphans()
         except SystemExit:
             return
 
@@ -190,32 +201,19 @@ class Interpreter(cmd.Cmd):
     def help_remove_thirdparty_dependencies(self):
         self._remove_thirdparty_dependencies_argparser().print_help()
 
+    def _is_thirdparty_dependency(self, codebase_root, parent, child):
+        parent_path = self._depgraph.get_attribute(parent,
+                                                   Analyser.ABSOLUTE_PATH_KEY,
+                                                   codebase_root)
+        return os.path.commonprefix([parent_path, codebase_root]) != codebase_root
+
     def do_remove_thirdparty_dependencies(self, params):
         try:
             parser = self._remove_thirdparty_dependencies_argparser()
             opts = parser.parse_args(self._argv(params))
-            Analyser(self._depgraph).remove_thirdparty_dependencies(
-                opts.codebase_root)
-        except SystemExit:
-            return
 
-    def _remove_node_argparser(self):
-        parser = argparse.ArgumentParser('removes a node from the dependency graph')
-        parser.add_argument(
-            'label',
-            action='store',
-            help='label of the node to remove')
-        return parser
-
-    def help_remove_node(self):
-        self._remove_node_argparser().print_help()
-
-    def do_remove_node(self, params):
-        try:
-            parser = self._remove_node_argparser()
-            opts = parser.parse_args(self._argv(params))
-            
-            self._depgraph.remove_nodes([opts.label])
+            self._depgraph.remove_dependency_by_predicate(
+                functools.partial(self._is_thirdparty_dependency, opts.codebase_root))
             self._depgraph.remove_orphans()
         except SystemExit:
             return

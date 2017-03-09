@@ -178,15 +178,5 @@ class TestAnalysis(unittest.TestCase):
             self._dependency_graph.get_attribute('other.hpp', Analyser.TU_BUILD_TIME_TO_SIZE_RATIO),
             5 / 150)
 
-    def test_remove_pch(self):
-        analyser = Analyser(self._dependency_graph)
-        analyser.remove_pch('%s$' % (os.path.basename('pch.h')))
-        
-        self.assertTrue(self._dependency_graph.has_node('a.cpp'))
-        self.assertTrue(self._dependency_graph.has_node('a.hpp'))
-        self.assertTrue(self._dependency_graph.has_node('lib.hpp'))
-        self.assertFalse(self._dependency_graph.has_node('pch.h'))
-        self.assertFalse(self._dependency_graph.has_node('other.hpp'))
-
 if __name__ == '__main__':
     unittest.main()

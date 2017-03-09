@@ -6,6 +6,7 @@ Contains the DependencyGraph class which holds the dependency between compiled
 files and their analysis metric values.
 """
 
+import re
 import logging
 import itertools
 import networkx as nx
@@ -105,26 +106,66 @@ class DependencyGraph:
         """
         return self._graph.has_node(label)
 
-    def remove_dependencies(self, parent):
-        """
-        Removes all outgoint edges from the parent node. Doesn't remove the
-        actual nodes. To remove nodes that no other node points to run
-        remove_orphans.
-        """
-        if not self._graph.has_node(parent):
-            raise RuntimeError('Label "%s" not found' % parent)
-        for child in self._graph.successors(parent):
-            logging.debug('Removing %s -> %s dependency', parent, child)
-            self._graph.remove_edge(parent, child)
+    def _attribute_matches(self, label, attribute, re_object):
+        value = self.get_attribute(label, attribute, None)
+        if value is not None:
+            return len(re_object.findall(value)) > 0
+        else:
+            return False
 
-    def remove_nodes(self, labels):
-        """Removes nodes with labels on the labels list."""
-        removed = 0
-        for label in labels:
-            removed += 1
-            logging.debug('Removing %s', label)
-            self._graph.remove_node(label)
-        logging.info('Removed %d nodes', removed)
+    @classmethod
+    def _all_match(cls, label, conditions):
+        for condition in conditions:
+            if not condition(label):
+                return False
+        return True
+
+    def remove_matching_nodes(self, **kwargs):
+        """
+        Removes nodes matching the provided patterns. Provide a "label" argument,
+        to match against the node label, all other argument keys will be trated
+        as attribute names. Argument values are regex patterns.
+
+        E.g.:
+        remove_matching_nodes('[a-z][0-9]') - will remove all nodes with labels
+            containing a letter followed by a digit
+        remove_matching_nodes(absolutepath='_pch') - will remove all nodes with the
+            absolutepath attribute containing '_pch'
+        remove_matching_nodes('Z$', absolutepath='foo') - will remove all nodes
+            with labels ending with a "Z" and the absolutepath attribute
+            containgin a "foo" (both conditions must be fulfilled)
+        """
+        if not kwargs:
+            return
+
+        conditions = []
+
+        for (attribute, pattern) in kwargs.items():
+            if attribute != 'label':
+                re_object = re.compile(pattern)
+                conditions.append(lambda label, attr=attribute, regex=re_object:
+                                  self._attribute_matches(label,
+                                                          attr,
+                                                          regex))
+            else:
+                conditions.append(lambda label, regex=pattern:
+                                  len(re.findall(regex, label)))
+
+        for label in list(self._graph.nodes_iter()):
+            if self._all_match(label, conditions):
+                self._graph.remove_node(label)
+
+    def remove_dependency_by_predicate(self, predicate):
+        """
+        Removes dependency edges for which
+        predicate(parent_label, dependency_label) evaluates to True.
+        """
+        for parent in self._graph.nodes_iter():
+            if parent != self._ROOT_NODE_LABEL:
+                for child in self._graph.successors(parent):
+                    if predicate(parent, child):
+                        logging.debug('Removing %s -> %s dependency', parent, child)
+                        self._graph.remove_edge(parent, child)
 
     def remove_orphans(self):
         """

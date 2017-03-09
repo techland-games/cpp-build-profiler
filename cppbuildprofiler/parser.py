@@ -185,6 +185,9 @@ def parse_vs_log(build_log_path):
     Parses a visual studio log pointed to by the build_log_path and returns
     a dependency graph for the built projects. To get a fully-fledged graph
     make sure to add "/Bt+ /showIncludes /nologo- /FC" to the compiler options.
+
+    Graph node labels are the files' basenames. If there is a duplicate name,
+    it will be suffixed by "_1", "_2", etc.
     """
     dependency_graph = DependencyGraph()
     channels = collections.defaultdict(_Channel_state)

@@ -5,7 +5,6 @@
 
 import logging
 import os
-import re
 import networkx as nx
 
 def _unify_path(path):
@@ -188,34 +187,6 @@ class Analyser:
                     subtree_label,
                     self.TU_BUILD_TIME_TO_SIZE_RATIO,
                     current)
-
-    def remove_pch(self, pattern):
-        """Removes all nodes with labels mathing the regex pattern."""
-        logging.info('Removing pch files...')
-        pattern = re.compile(pattern)
-        to_remove = list(label for label 
-                         in self._dependency_graph.traverse_post_order()
-                         if len(pattern.findall(label)))
-        self._dependency_graph.remove_nodes(to_remove)
-        logging.info('Removing orphaned nodes...')
-        self._dependency_graph.remove_orphans()
-
-    def _get_thirdparty_dependencies(self, codebase_root):
-        return (label for label in self._dependency_graph.traverse_post_order()
-                if os.path.commonprefix(
-                    [self._dependency_graph.get_attribute(label, self.ABSOLUTE_PATH_KEY), 
-                     codebase_root]) != codebase_root)
-
-    def remove_thirdparty_dependencies(self, codebase_root):
-        """"Removes dependencies of files with paths outside the codebase"""
-        logging.info('Removing third-party dependencies...')
-        codebase_root = _unify_path(codebase_root)
-        thirdparty_parents = list(self._get_thirdparty_dependencies)
-        for label in thirdparty_parents:
-            logging.debug('Removing dependencies of %s', label)
-            self._dependency_graph.remove_dependencies(label)
-        logging.info('Removing orphaned nodes...')
-        self._dependency_graph.remove_orphans()
 
     def run_full_analysis(self):
         """Calculates all available metrics for the graph"""
