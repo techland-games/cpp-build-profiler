@@ -178,5 +178,43 @@ class TestAnalysis(unittest.TestCase):
             self._dependency_graph.get_attribute('other.hpp', Analyser.TU_BUILD_TIME_TO_SIZE_RATIO),
             5 / 150)
 
+    def test_update_analysis(self):
+        analyser = Analyser(self._dependency_graph)
+        analyser.run_full_analysis()
+        self._dependency_graph.remove_matching_nodes(label='pch.h')
+        self._dependency_graph.remove_orphans()
+        analyser.update_analysis()
+
+        self.assertEqual(
+            self._dependency_graph.get_attribute('a.cpp', Analyser.TOTAL_SIZE_KEY),
+            130)
+        self.assertEqual(
+            self._dependency_graph.get_attribute('a.hpp', Analyser.TOTAL_SIZE_KEY),
+            30)
+        self.assertEqual(
+            self._dependency_graph.get_attribute('lib.hpp', Analyser.TOTAL_SIZE_KEY),
+            20)
+
+        self.assertAlmostEqual(
+            self._dependency_graph.get_attribute('a.hpp', Analyser.TOTAL_BUILD_TIME_KEY),
+            3.0)
+        self.assertAlmostEqual(
+            self._dependency_graph.get_attribute('lib.hpp', Analyser.TOTAL_BUILD_TIME_KEY),
+            3.0)
+
+        self.assertAlmostEqual(
+            self._dependency_graph.get_attribute('a.hpp', Analyser.TRANSLATION_UNITS_KEY),
+            1)
+        self.assertEqual(
+            self._dependency_graph.get_attribute('lib.hpp', Analyser.TRANSLATION_UNITS_KEY),
+            1)
+
+        self.assertAlmostEqual(
+            self._dependency_graph.get_attribute('a.hpp', Analyser.TU_BUILD_TIME_TO_SIZE_RATIO),
+            3 / 130)
+        self.assertEqual(
+            self._dependency_graph.get_attribute('lib.hpp', Analyser.TU_BUILD_TIME_TO_SIZE_RATIO),
+            (3 / 130))
+
 if __name__ == '__main__':
     unittest.main()

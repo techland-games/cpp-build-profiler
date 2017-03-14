@@ -131,6 +131,9 @@ class Analyser:
         nodes.
         """
         logging.info('Calculating total build times...')
+        for label in self._dependency_graph.traverse_post_order():
+            self._dependency_graph.remove_attribute(label, self.TOTAL_BUILD_TIME_KEY)
+
         for label in self._dependency_graph.get_top_level_nodes():
             build_time = self._dependency_graph.get_attribute(
                 label,
@@ -151,6 +154,9 @@ class Analyser:
         dependency nodes is the number of dependant top-level nodes.
         """
         logging.info('Calculating translation units...')
+        for label in self._dependency_graph.traverse_post_order():
+            self._dependency_graph.remove_attribute(label, self.TRANSLATION_UNITS_KEY)
+
         for label in self._dependency_graph.get_top_level_nodes():
             subtree = self._dependency_graph.traverse_pre_order(label)
             for subtree_label in subtree:
@@ -169,6 +175,9 @@ class Analyser:
         unit build time divided by total size ratios.
         """
         logging.info('Calculating translation units build time to size ratio...')
+        for label in self._dependency_graph.traverse_post_order():
+            self._dependency_graph.remove_attribute(label, self.TU_BUILD_TIME_TO_SIZE_RATIO)
+
         for label in self._dependency_graph.get_top_level_nodes():
             build_time = self._dependency_graph.get_attribute(label, self.BUILD_TIME_KEY)
             total_size = self._dependency_graph.get_attribute(label, self.TOTAL_SIZE_KEY)

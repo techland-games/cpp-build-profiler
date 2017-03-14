@@ -203,6 +203,13 @@ class DependencyGraph:
         """
         self._graph.node[label][key] = value
 
+    def remove_attribute(self, label, key):
+        """
+        Removes the given attribute from the label.
+        """
+        if key in self._graph.node[label]:
+            del self._graph.node[label][key]
+        
     def _traverse(self, origin, method, include_origin, reverse):
         if not origin:
             origin = self._ROOT_NODE_LABEL
