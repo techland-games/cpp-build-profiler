@@ -71,6 +71,10 @@ class _Channel_state:
             absolute_path = n.label
             n.label = self._unique_label(absolute_path, dependency_graph)
             n.attributes[Analyser.ABSOLUTE_PATH_KEY] = absolute_path
+            if dependency_graph.has_node(n.label):
+                logging.warn('Ignoring duplicated cpp file label "%s"',
+                             n.label)
+                continue
             logging.debug('Adding top level file %s %s',
                           n.label, n.attributes)
             dependency_graph.add_top_level_node(

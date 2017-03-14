@@ -190,3 +190,12 @@ class Analyser:
         self.calculate_total_build_times()
         self.calculate_translation_units()
         self.calculate_tu_build_time_to_size()
+
+    def update_analysis(self):
+        """
+        Update the analysis. Used to re-calculate metrics after removing nodes.
+        Will not re-calculate file size or total size.
+        """
+        self.calculate_total_build_times()
+        self.calculate_translation_units()
+        self.calculate_tu_build_time_to_size()

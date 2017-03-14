@@ -153,8 +153,27 @@ class Interpreter(cmd.Cmd):
         except SystemExit:
             return
 
+    def _analyse_argparser(self):
+        parser = argparse.ArgumentParser('runs the dependency graph analysis')
+        parser.add_argument(
+            '--update-only', '-u',
+            action='store_true',
+            help='update-only (don\'t re-calculate file size metrics)')
+        return parser
+
+    def help_analyse(self):
+        self._analyse_argparser().print_help()
+
     def do_analyse(self, params):
-        Analyser(self._depgraph).run_full_analysis()
+        parser = self._analyse_argparser()
+        try:
+            opts = parser.parse_args(self._argv(params))
+            if opts.update_only:
+                Analyser(self._depgraph).update_analysis()
+            else:
+                Analyser(self._depgraph).run_full_analysis()
+        except SystemExit:
+            return
 
     def _remove_nodes_argparser(self):
         parser = argparse.ArgumentParser('removes precompiled headers from the graph')
