@@ -251,7 +251,6 @@ class TestMain(unittest.TestCase):
 
             interpreter_load_store = __main__.Interpreter()
             interpreter_load_store.onecmd(r'load %s' % pre_graph_file)
-            interpreter_load_store.onecmd(r'remove_nodes --absolute-path stdafx')
             interpreter_load_store.onecmd(r'remove_thirdparty_dependencies D:/work/test')
             interpreter_load_store.onecmd(r'store %s' % graph_file)
 
@@ -261,11 +260,11 @@ class TestMain(unittest.TestCase):
             self.assertTrue(result.has_node('test2.hpp'))
             self.assertTrue(result.has_node('test-lib.hpp'))
             self.assertTrue(result.has_node('vector'))
+            self.assertTrue(result.has_node('stdafx.cpp'))
+            self.assertTrue(result.has_node('stdafx.h'))
+            self.assertTrue(result.has_node('test-lib2.hpp'))
+            self.assertTrue(result.has_node('memory'))
             self.assertFalse(result.has_node('xmemory'))
-            self.assertFalse(result.has_node('stdafx.cpp'))
-            self.assertFalse(result.has_node('stdafx.h'))
-            self.assertFalse(result.has_node('test-lib2.hpp'))
-            self.assertFalse(result.has_node('memory'))
         finally:
             if os.path.exists(log_file):
                 os.unlink(log_file)

@@ -175,39 +175,6 @@ class Interpreter(cmd.Cmd):
         except SystemExit:
             return
 
-    def _remove_nodes_argparser(self):
-        parser = argparse.ArgumentParser('removes precompiled headers from the graph')
-        parser.add_argument(
-            '--label',
-            action='store',
-            help='a regex pattern for labels of nodes to remove',
-            nargs='?')
-        parser.add_argument(
-            '--absolute-path',
-            action='store',
-            help='a regex pattern for the absolute path of nodes to remove',
-            nargs='?')
-        return parser
-
-    def help_remove_nodes(self):
-        self._remove_nodes_argparser().print_help()
-
-    def do_remove_nodes(self, params):
-        parser = self._remove_nodes_argparser()
-        try:
-            opts = parser.parse_args(self._argv(params))
-
-            args = {}
-            if opts.label:
-                args['label'] = opts.label
-            if opts.absolute_path:
-                args[Analyser.ABSOLUTE_PATH_KEY] = opts.absolute_path
-
-            self._depgraph.remove_matching_nodes(**args)
-            self._depgraph.remove_orphans()
-        except SystemExit:
-            return
-
     def _remove_thirdparty_dependencies_argparser(self):
         parser = argparse.ArgumentParser('removes third-party header '
                                          'dependencies')

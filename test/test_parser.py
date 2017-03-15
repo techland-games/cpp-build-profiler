@@ -91,33 +91,41 @@ class TestParser(unittest.TestCase):
 
     _PCH_LOG = r'''
 1>------ Rebuild All started: Project: test, Configuration: Debug x64 ------
-1>  Microsoft (R) C/C++ Optimizing Compiler Version 19.00.24215.1 for x64
+1>  Microsoft (R) C/C++ Optimizing Compiler Version 17.00.61030 for x64
 1>  Copyright (C) Microsoft Corporation.  All rights reserved.
 1>
-1>  cl /c /ZI /nologo /W3 /WX- /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Yc"stdafx.h" /Fp"x64\Debug\test.pch" /Fo"x64\Debug\\" /Fd"x64\Debug\vc140.pdb" /Gd /TP /errorReport:prompt /Bt+ /showIncludes /nologo- /FC stdafx.cpp
+1>  cl /c /Zi /nologo /W3 /WX- /MP /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yc"pch.h" /Fp"x64\Debug\test.pch" /Fo"x64\Debug\\" /Fd"x64\Debug\vc110.pdb" /Gd /TP /errorReport:prompt /Bt+ /showIncludes /nologo- /FC pch.cpp
 1>cl : Command line warning D9035: option 'nologo-' has been deprecated and will be removed in a future release
 1>cl : Command line warning D9025: overriding '/nologo' with '/nologo-'
 1>
-1>  stdafx.cpp
-1>  Note: including file: d:\work\test\test\stdafx.h
-1>  Note: including file:  d:\work\test\test\implicitly-from-pch.h
-1>  Note: including file:  d:\work\test\test\explicitly-from-pch.h
-1>  time(C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\c1xx.dll)=0.03911s < 1549540412222 - 1549540542374 > BB [D:\work\test\test\stdafx.cpp]
-1>  time(C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\c2.dll)=0.00459s < 1549540550542 - 1549540565824 > BB [D:\work\test\test\stdafx.cpp]
-1>  Microsoft (R) C/C++ Optimizing Compiler Version 19.00.24215.1 for x64
+1>  pch.cpp
+1>  Note: including file: d:\work\test\test\pch.h
+1>  Note: including file:  d:\work\test\test\in-pch.h
+1>  time(C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\AMD64\c1xx.dll)=0.03300s < 1806376904715 - 1806377014532 > BB [D:\work\test\test\pch.cpp]
+1>  time(C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\AMD64\c2.dll)=0.00463s < 1806377017447 - 1806377032857 > BB [D:\work\test\test\pch.cpp]
+1>  Microsoft (R) C/C++ Optimizing Compiler Version 17.00.61030 for x64
 1>  Copyright (C) Microsoft Corporation.  All rights reserved.
 1>
-1>  cl /c /ZI /nologo /W3 /WX- /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Yu"stdafx.h" /Fp"x64\Debug\test.pch" /Fo"x64\Debug\\" /Fd"x64\Debug\vc140.pdb" /Gd /TP /errorReport:prompt /Bt+ /showIncludes /nologo- /FC test.cpp
+1>  cl /c /Zi /nologo /W3 /WX- /MP /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"x64\Debug\\" /Fd"x64\Debug\vc110.pdb" /Gd /TP /errorReport:prompt /Bt+ /showIncludes /nologo- /FC "doesnt-use-pch.cpp"
 1>cl : Command line warning D9035: option 'nologo-' has been deprecated and will be removed in a future release
 1>cl : Command line warning D9025: overriding '/nologo' with '/nologo-'
 1>
-1>  test.cpp
+1>  doesnt-use-pch.cpp
 1>  Note: including file: d:\work\test\test\not-in-pch.h
-1>  Note: including file:  d:\work\test\test\explicitly-from-pch.h
-1>  time(C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\c1xx.dll)=0.03350s < 1549540933522 - 1549541045030 > BB [D:\work\test\test\test.cpp]
-1>  time(C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\c2.dll)=0.00519s < 1549541052395 - 1549541069667 > BB [D:\work\test\test\test.cpp]
+1>  Note: including file:  d:\work\test\test\in-pch.h
+1>  time(C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\AMD64\c1xx.dll)=0.01835s < 1806377197600 - 1806377258685 > BB [D:\work\test\test\doesnt-use-pch.cpp]
+1>  time(C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\AMD64\c2.dll)=0.00420s < 1806377261413 - 1806377275378 > BB [D:\work\test\test\doesnt-use-pch.cpp]
+1>  Microsoft (R) C/C++ Optimizing Compiler Version 17.00.61030 for x64
+1>  Copyright (C) Microsoft Corporation.  All rights reserved.
+1>
+1>  cl /c /Zi /nologo /W3 /WX- /MP /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"pch.h" /Fp"x64\Debug\test.pch" /Fo"x64\Debug\\" /Fd"x64\Debug\vc110.pdb" /Gd /TP /errorReport:prompt /Bt+ /showIncludes /nologo- /FC "uses-pch.cpp"
+1>cl : Command line warning D9035: option 'nologo-' has been deprecated and will be removed in a future release
+1>cl : Command line warning D9025: overriding '/nologo' with '/nologo-'
+1>
+1>  uses-pch.cpp
+1>  time(C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\AMD64\c1xx.dll)=0.01282s < 1806377423653 - 1806377466324 > BB [D:\work\test\test\uses-pch.cpp]
+1>  time(C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\AMD64\c2.dll)=0.00431s < 1806377469258 - 1806377483587 > BB [D:\work\test\test\uses-pch.cpp]
 1>  test.vcxproj -> D:\work\test\x64\Debug\test.exe
-1>  test.vcxproj -> D:\work\test\x64\Debug\test.pdb (Full PDB)
 ========== Rebuild All: 1 succeeded, 0 failed, 0 skipped ==========
 '''
 
@@ -251,7 +259,7 @@ class TestParser(unittest.TestCase):
         finally:
             os.remove(log_path)
 
-    def test_removes_pch_duplicates(self):
+    def test_parses_pch_arguments(self):
         log_path = tempfile.mktemp()
         try:
             with open(log_path, 'w') as output_file:
@@ -259,28 +267,38 @@ class TestParser(unittest.TestCase):
             depgraph = parse_vs_log(log_path)
 
             graph = depgraph._graph
-
+            
             nodes = graph.nodes()
             self.assertEqual(sorted(nodes), sorted([
                 depgraph._ROOT_NODE_LABEL,
-                'stdafx.cpp',
-                'test.cpp',
-                'stdafx.h',
-                'implicitly-from-pch.h',
-                'explicitly-from-pch.h',
+                'pch.cpp',
+                'pch.h',
+                'doesnt-use-pch.cpp',
                 'not-in-pch.h',
+                'uses-pch.cpp',
+                'in-pch.h'
                 ]))
 
-            edges = graph.edges()
-            self.assertEqual(sorted(edges), sorted([
-                (depgraph._ROOT_NODE_LABEL, 'stdafx.cpp'),
-                (depgraph._ROOT_NODE_LABEL, 'test.cpp'),
-                ('stdafx.cpp', 'stdafx.h'),
-                ('test.cpp', 'stdafx.h'),
-                ('test.cpp', 'not-in-pch.h'),
-                ('stdafx.h', 'implicitly-from-pch.h'),
-                ('stdafx.h', 'explicitly-from-pch.h'),
-                ]))
+            self.assertNotIn(Analyser.CREATE_PCH_KEY, graph.node[depgraph._ROOT_NODE_LABEL])
+            self.assertNotIn(Analyser.USE_PCH_KEY, graph.node[depgraph._ROOT_NODE_LABEL])
+
+            self.assertEqual(graph.node['pch.cpp'][Analyser.CREATE_PCH_KEY], 'pch.h')
+            self.assertNotIn(Analyser.USE_PCH_KEY, graph.node['pch.cpp'])
+
+            self.assertNotIn(Analyser.CREATE_PCH_KEY, graph.node['pch.h'])
+            self.assertNotIn(Analyser.USE_PCH_KEY, graph.node['pch.h'])
+
+            self.assertNotIn(Analyser.CREATE_PCH_KEY, graph.node['doesnt-use-pch.cpp'])
+            self.assertNotIn(Analyser.USE_PCH_KEY, graph.node['doesnt-use-pch.cpp'])
+
+            self.assertNotIn(Analyser.CREATE_PCH_KEY, graph.node['not-in-pch.h'])
+            self.assertNotIn(Analyser.USE_PCH_KEY, graph.node['not-in-pch.h'])
+
+            self.assertNotIn(Analyser.CREATE_PCH_KEY, graph.node['uses-pch.cpp'])
+            self.assertEqual('pch.h', graph.node['uses-pch.cpp'][Analyser.USE_PCH_KEY])
+
+            self.assertNotIn(Analyser.CREATE_PCH_KEY, graph.node['in-pch.h'])
+            self.assertNotIn(Analyser.USE_PCH_KEY, graph.node['in-pch.h'])
         finally:
             os.remove(log_path)
 
