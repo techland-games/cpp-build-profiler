@@ -76,6 +76,10 @@ class DependencyGraph:
         self._graph.add_node(label, **kwargs)
         self._graph.add_edge(parent, label)
 
+    def has_dependency(self, parent, successor):
+        """Returns true iff parent depends on successor (directly or indirectly)"""
+        return self._graph.has_node(successor) and nx.has_path(self._graph, parent, successor)
+
     def get_top_level_nodes(self):
         """Returns an iterator over all the top-level nodes."""
         return self._graph.successors_iter(self._ROOT_NODE_LABEL)

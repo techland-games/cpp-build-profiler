@@ -89,6 +89,38 @@ class TestParser(unittest.TestCase):
 ========== Rebuild All: 2 succeeded, 0 failed, 0 skipped ==========
 '''
 
+    _PCH_LOG = r'''
+1>------ Rebuild All started: Project: test, Configuration: Debug x64 ------
+1>  Microsoft (R) C/C++ Optimizing Compiler Version 19.00.24215.1 for x64
+1>  Copyright (C) Microsoft Corporation.  All rights reserved.
+1>
+1>  cl /c /ZI /nologo /W3 /WX- /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Yc"stdafx.h" /Fp"x64\Debug\test.pch" /Fo"x64\Debug\\" /Fd"x64\Debug\vc140.pdb" /Gd /TP /errorReport:prompt /Bt+ /showIncludes /nologo- /FC stdafx.cpp
+1>cl : Command line warning D9035: option 'nologo-' has been deprecated and will be removed in a future release
+1>cl : Command line warning D9025: overriding '/nologo' with '/nologo-'
+1>
+1>  stdafx.cpp
+1>  Note: including file: d:\work\test\test\stdafx.h
+1>  Note: including file:  d:\work\test\test\implicitly-from-pch.h
+1>  Note: including file:  d:\work\test\test\explicitly-from-pch.h
+1>  time(C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\c1xx.dll)=0.03911s < 1549540412222 - 1549540542374 > BB [D:\work\test\test\stdafx.cpp]
+1>  time(C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\c2.dll)=0.00459s < 1549540550542 - 1549540565824 > BB [D:\work\test\test\stdafx.cpp]
+1>  Microsoft (R) C/C++ Optimizing Compiler Version 19.00.24215.1 for x64
+1>  Copyright (C) Microsoft Corporation.  All rights reserved.
+1>
+1>  cl /c /ZI /nologo /W3 /WX- /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Yu"stdafx.h" /Fp"x64\Debug\test.pch" /Fo"x64\Debug\\" /Fd"x64\Debug\vc140.pdb" /Gd /TP /errorReport:prompt /Bt+ /showIncludes /nologo- /FC test.cpp
+1>cl : Command line warning D9035: option 'nologo-' has been deprecated and will be removed in a future release
+1>cl : Command line warning D9025: overriding '/nologo' with '/nologo-'
+1>
+1>  test.cpp
+1>  Note: including file: d:\work\test\test\not-in-pch.h
+1>  Note: including file:  d:\work\test\test\explicitly-from-pch.h
+1>  time(C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\c1xx.dll)=0.03350s < 1549540933522 - 1549541045030 > BB [D:\work\test\test\test.cpp]
+1>  time(C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\c2.dll)=0.00519s < 1549541052395 - 1549541069667 > BB [D:\work\test\test\test.cpp]
+1>  test.vcxproj -> D:\work\test\x64\Debug\test.exe
+1>  test.vcxproj -> D:\work\test\x64\Debug\test.pdb (Full PDB)
+========== Rebuild All: 1 succeeded, 0 failed, 0 skipped ==========
+'''
+
     def test_parses_full_vs_log(self):
         log_path = tempfile.mktemp()
         try:
@@ -216,6 +248,39 @@ class TestParser(unittest.TestCase):
                 graph.node['test-different.hpp_1'][Analyser.ABSOLUTE_PATH_KEY],
                 r'd:\work\test\test-other\test-different.hpp')
 
+        finally:
+            os.remove(log_path)
+
+    def test_removes_pch_duplicates(self):
+        log_path = tempfile.mktemp()
+        try:
+            with open(log_path, 'w') as output_file:
+                output_file.write(self._PCH_LOG)
+            depgraph = parse_vs_log(log_path)
+
+            graph = depgraph._graph
+
+            nodes = graph.nodes()
+            self.assertEqual(sorted(nodes), sorted([
+                depgraph._ROOT_NODE_LABEL,
+                'stdafx.cpp',
+                'test.cpp',
+                'stdafx.h',
+                'implicitly-from-pch.h',
+                'explicitly-from-pch.h',
+                'not-in-pch.h',
+                ]))
+
+            edges = graph.edges()
+            self.assertEqual(sorted(edges), sorted([
+                (depgraph._ROOT_NODE_LABEL, 'stdafx.cpp'),
+                (depgraph._ROOT_NODE_LABEL, 'test.cpp'),
+                ('stdafx.cpp', 'stdafx.h'),
+                ('test.cpp', 'stdafx.h'),
+                ('test.cpp', 'not-in-pch.h'),
+                ('stdafx.h', 'implicitly-from-pch.h'),
+                ('stdafx.h', 'explicitly-from-pch.h'),
+                ]))
         finally:
             os.remove(log_path)
 
