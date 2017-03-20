@@ -60,7 +60,8 @@ class Analyser:
                 if create_pch in self._pch_dependencies:
                     raise RuntimeError('Duplicate precompiled header name: %s' %
                                        create_pch)
-                self._pch_dependencies[create_pch] = frozenset(self._dependency_graph.traverse_pre_order(create_pch, True))
+                self._pch_dependencies[create_pch] = frozenset(
+                    self._dependency_graph.traverse_pre_order(create_pch, True))
 
     def _is_pch_dependency(self, parent, child):
         use_pch = self._dependency_graph.get_attribute(parent, self.USE_PCH_KEY)

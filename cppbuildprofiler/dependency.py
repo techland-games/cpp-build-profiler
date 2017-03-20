@@ -7,7 +7,6 @@ files and their analysis metric values.
 """
 
 import os
-import re
 import logging
 import itertools
 import networkx as nx
