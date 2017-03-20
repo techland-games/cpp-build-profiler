@@ -3,6 +3,8 @@
 # Copyright (c) Techland. All rights reserved.
 # Licensed under the MIT License. See License.txt in the project root for license information.
 
+"""Contains a command line interpreter (CLI) for C++ build profiling."""
+
 import sys
 import argparse
 import cmd
@@ -14,6 +16,10 @@ import networkx as nx
 from cppbuildprofiler import *
 
 class Interpreter(cmd.Cmd):
+    
+    """
+    Implements the command line interpreter.
+    """
 
     _ALL_METRICS = [
         Analyser.ABSOLUTE_PATH_KEY,
@@ -106,8 +112,11 @@ class Interpreter(cmd.Cmd):
         try:
             opts = parser.parse_args(self._argv(params))
             self._depgraph = parse_vs_log(opts.path)
-            self._depgraph.log_stats('Parsed %s into a dependency graph' %
-                                     opts.path)
+            logging.info('Parsed %s and created a dependency graph with %d '
+                         'nodes and %d edges',
+                         opts.path,
+                         self._depgraph.number_of_nodes(),
+                         self._depgraph.number_of_edges())
         except SystemExit:
             return
 
@@ -127,8 +136,11 @@ class Interpreter(cmd.Cmd):
         try:
             opts = parser.parse_args(self._argv(params))
             self._depgraph = DependencyGraph.read(opts.path)
-            self._depgraph.log_stats('Loaded dependency grap from %s' %
-                                     opts.path)
+            logging.info('Loaded dependency graph from %s with %d nodes '
+                         'and %d edges',
+                         opts.path,
+                         self._depgraph.number_of_nodes(),
+                         self._depgraph.number_of_edges())
         except SystemExit:
             return
 
@@ -148,8 +160,11 @@ class Interpreter(cmd.Cmd):
         try:
             opts = parser.parse_args(self._argv(params))
             self._depgraph.write(opts.path)
-            self._depgraph.log_stats('Stored dependency graph in %s' %
-                                     opts.path)
+            logging.info('Stored dependency graph from %s with %d nodes '
+                         'and %d edges',
+                         opts.path,
+                         self._depgraph.number_of_nodes(),
+                         self._depgraph.number_of_edges())
         except SystemExit:
             return
 
@@ -224,10 +239,18 @@ class Interpreter(cmd.Cmd):
         parser = self._subgraph_argparser()
         try:
             opts = parser.parse_args(self._argv(params))
+            pre_nodes = self._depgraph.number_of_nodes()
+            pre_edges = self._depgraph.number_of_edges()
             self._depgraph = self._depgraph.get_subgraph(opts.origin,
                                                          opts.dependencies,
                                                          opts.dependants)
-            self._depgraph.log_stats('Created subgraph of %s' % opts.origin)
+            logging.info('Created subgraph of %s with %d nodes and %d edges '
+                         '(%d nodes and %d edges removed)',
+                         opts.origin,
+                         self._depgraph.number_of_nodes(),
+                         self._depgraph.number_of_edges(),
+                         pre_nodes - self._depgraph.number_of_nodes(),
+                         pre_edges - self._depgraph.number_of_edges())
         except SystemExit:
             return
 
@@ -267,7 +290,7 @@ class Interpreter(cmd.Cmd):
                 raise RuntimeError('Specify --all-metrics to print all metrics '
                                    'or a list of metrics after --metrics')
 
-            columns = { metric : Analyser.CSV_COLUMNS[metric] for metric in metrics }
+            columns = {metric : Analyser.CSV_COLUMNS[metric] for metric in metrics}
 
             if opts.out:
                 stream = open(opts.out, 'w')
