@@ -17,7 +17,8 @@ distutils.core.setup(
     packages=['cppbuildprofiler'],
     entry_points={
         'console_scripts': [
-            'cpp-build-profiler = cppbuildprofiler.__main__:main'
+            'cppbuildprofiler-cli = cppbuildprofiler.cli:main',
+            'cppbuildprofiler = cppbuildprofiler.profiler:main',
             ]
         },
     install_requires=[

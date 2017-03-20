@@ -48,11 +48,13 @@ class DependencyGraph:
         """Writes the dependency graph to a .gml file."""
         nx.write_gml(self._graph, path)
 
-    def log_stats(self, prefix):
-        """Logs the given text suffixed by current number of nodes and edges"""
-        logging.info('%s (%d nodes, %d edges)', prefix,
-                     self._graph.number_of_nodes(),
-                     self._graph.number_of_edges())
+    def number_of_nodes(self):
+        """Returns the number of nodes in the dependency graph"""
+        return self._graph.number_of_nodes()
+
+    def number_of_edges(self):
+        """Returns the number of edges in the dependency graph"""
+        return self._graph.number_of_edges()
 
     def add_top_level_node(self, label, **kwargs):
         """
