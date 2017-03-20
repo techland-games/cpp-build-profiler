@@ -3,6 +3,8 @@
 # Copyright (c) Techland. All rights reserved.
 # Licensed under the MIT License. See License.txt in the project root for license information.
 
+"""Contains a command line interpreter (CLI) for C++ build profiling."""
+
 import sys
 import argparse
 import cmd
@@ -14,6 +16,10 @@ import networkx as nx
 from cppbuildprofiler import *
 
 class Interpreter(cmd.Cmd):
+    
+    """
+    Implements the command line interpreter.
+    """
 
     _ALL_METRICS = [
         Analyser.ABSOLUTE_PATH_KEY,
@@ -284,7 +290,7 @@ class Interpreter(cmd.Cmd):
                 raise RuntimeError('Specify --all-metrics to print all metrics '
                                    'or a list of metrics after --metrics')
 
-            columns = { metric : Analyser.CSV_COLUMNS[metric] for metric in metrics }
+            columns = {metric : Analyser.CSV_COLUMNS[metric] for metric in metrics}
 
             if opts.out:
                 stream = open(opts.out, 'w')

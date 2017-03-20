@@ -1,5 +1,14 @@
 #!/usr/bin/env python
 
+# Copyright (c) Techland. All rights reserved.
+# Licensed under the MIT License. See License.txt in the project root for license information.
+
+"""
+Contains a script executing a typical C++ build profiling session. Generates
+a .gml file with the dependency graph for reference and a csv file that could
+be imported into a spreadsheet programme for further analysis.
+"""
+
 import logging
 import os
 import argparse
@@ -48,9 +57,9 @@ def _profile(profile_dir, log_file, codebase_dir, column_separator):
     csv_path = os.path.join(profile_dir, 'stats.csv')
     logging.info('Storing stats in %s', csv_path)
     with open(csv_path, 'w') as f:
-        columns = { key: value for (key, value)
+        columns = {key: value for (key, value)
                    in Analyser.CSV_COLUMNS.items()
-                   if key != Analyser.COMPILATION_COMMAND_KEY }
+                   if key != Analyser.COMPILATION_COMMAND_KEY}
         depgraph.print_csv(f, columns, column_separator)
 
 def main(args=None):
