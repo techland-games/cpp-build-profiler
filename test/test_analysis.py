@@ -194,6 +194,9 @@ class TestAnalysis(unittest.TestCase):
         '''
         The test dependency graph is setup as follows:
 
+        pch.cpp [file size: 10B, build time: 10.0, create pch: pch.h]
+        - pch.h [file size: 50B]
+        -- lib.hpp [file size: 20B]
         a.cpp [file size: 100B, build time: 3.0]
         - a.hpp [file size: 10B]
         -- lib.hpp [file size: 20B]
@@ -213,24 +216,24 @@ class TestAnalysis(unittest.TestCase):
             Analyser.TU_BUILD_TIME_TO_SIZE_RATIO))
         self.assertAlmostEqual(
             self._dependency_graph.get_attribute('pch.h', Analyser.TU_BUILD_TIME_TO_SIZE_RATIO),
-            10.0 / (10 + 50 + 20)) # b.cpp not added
+            (10.0 / (10 + 50 + 20))) # b.cpp not added
         self.assertAlmostEqual(
             self._dependency_graph.get_attribute('lib.hpp', Analyser.TU_BUILD_TIME_TO_SIZE_RATIO),
-            (10.0 / (10 + 50 + 20) + (3.0 / 130))) # b.cpp not added
+            ((10.0 / (10 + 50 + 20)) + (3.0 / (100 + 10 + 20 + 50)))) # b.cpp not added
 
         self.assertFalse(self._dependency_graph.has_attribute(
             'a.cpp',
             Analyser.TU_BUILD_TIME_TO_SIZE_RATIO))
         self.assertAlmostEqual(
             self._dependency_graph.get_attribute('a.hpp', Analyser.TU_BUILD_TIME_TO_SIZE_RATIO),
-            3 / 130)
+            (3.0 / (100 + 10 + 20 + 50)))
         
         self.assertFalse(self._dependency_graph.has_attribute(
             'b.cpp',
             Analyser.TU_BUILD_TIME_TO_SIZE_RATIO))
         self.assertAlmostEqual(
             self._dependency_graph.get_attribute('other.hpp', Analyser.TU_BUILD_TIME_TO_SIZE_RATIO),
-            (5 / 150) + (3 / 130))
+            (5.0 / (30 + 50)) + (3.0 / (100 + 10 + 20 + 50)))
 
 if __name__ == '__main__':
     unittest.main()
