@@ -23,6 +23,8 @@ class Analyser:
     PROJECT_KEY = 'project'
     ABSOLUTE_PATH_KEY = 'absolutepath'
     COMPILATION_COMMAND_KEY = 'compilationcommand'
+    USE_PCH_KEY = 'usepch'
+    CREATE_PCH_KEY = 'createpch'
     BUILD_TIME_KEY = 'buildtime'
     FILE_SIZE_KEY = 'filesize'
     TOTAL_SIZE_KEY = 'totalsize'
@@ -48,7 +50,26 @@ class Analyser:
 
     def __init__(self, dependency_graph):
         self._dependency_graph = dependency_graph
+        self._build_pch_dependencies()
     
+    def _build_pch_dependencies(self):
+        self._pch_dependencies = {}
+        for cpp_node in self._dependency_graph.get_top_level_nodes():
+            create_pch = self._dependency_graph.get_attribute(cpp_node, self.CREATE_PCH_KEY)
+            if create_pch:
+                if create_pch in self._pch_dependencies:
+                    raise RuntimeError('Duplicate precompiled header name: %s' %
+                                       create_pch)
+                self._pch_dependencies[create_pch] = frozenset(
+                    self._dependency_graph.traverse_pre_order(create_pch, True))
+
+    def _is_pch_dependency(self, parent, child):
+        use_pch = self._dependency_graph.get_attribute(parent, self.USE_PCH_KEY)
+        if use_pch:
+            return child in self._pch_dependencies[use_pch]
+        else:
+            return False
+
     def _guess_dependency_project(self, label, directory_to_project):
         if self._dependency_graph.has_attribute(label, self.PROJECT_KEY):
             return self._dependency_graph.get_attribute(label, self.PROJECT_KEY)
@@ -117,8 +138,9 @@ class Analyser:
             subtree_size = 0
             subtree = self._dependency_graph.traverse_post_order(label, True)
             for subtree_label in subtree:
-                subtree_size += self._dependency_graph.get_attribute(
-                    subtree_label, self.FILE_SIZE_KEY)
+                if not self._is_pch_dependency(label, subtree_label):
+                    subtree_size += self._dependency_graph.get_attribute(
+                        subtree_label, self.FILE_SIZE_KEY)
             self._dependency_graph.set_attribute(label, self.TOTAL_SIZE_KEY,
                                                  subtree_size)
             logging.debug('Total size of %s is %s', label,
@@ -140,13 +162,14 @@ class Analyser:
                 self.BUILD_TIME_KEY)
             subtree = self._dependency_graph.traverse_pre_order(label)
             for subtree_label in subtree:
-                current = self._dependency_graph.get_attribute(
-                    subtree_label, self.TOTAL_BUILD_TIME_KEY, default=0.0)
-                current += build_time
-                self._dependency_graph.set_attribute(
-                    subtree_label,
-                    self.TOTAL_BUILD_TIME_KEY,
-                    current)
+                if not self._is_pch_dependency(label, subtree_label):
+                    current = self._dependency_graph.get_attribute(
+                        subtree_label, self.TOTAL_BUILD_TIME_KEY, default=0.0)
+                    current += build_time
+                    self._dependency_graph.set_attribute(
+                        subtree_label,
+                        self.TOTAL_BUILD_TIME_KEY,
+                        current)
 
     def calculate_translation_units(self):
         """
@@ -160,13 +183,14 @@ class Analyser:
         for label in self._dependency_graph.get_top_level_nodes():
             subtree = self._dependency_graph.traverse_pre_order(label)
             for subtree_label in subtree:
-                current = self._dependency_graph.get_attribute(
-                    subtree_label, self.TRANSLATION_UNITS_KEY, default=0)
-                current += 1
-                self._dependency_graph.set_attribute(
-                    subtree_label,
-                    self.TRANSLATION_UNITS_KEY,
-                    current)
+                if not self._is_pch_dependency(label, subtree_label):
+                    current = self._dependency_graph.get_attribute(
+                        subtree_label, self.TRANSLATION_UNITS_KEY, default=0)
+                    current += 1
+                    self._dependency_graph.set_attribute(
+                        subtree_label,
+                        self.TRANSLATION_UNITS_KEY,
+                        current)
 
     def calculate_tu_build_time_to_size(self):
         """
@@ -184,13 +208,14 @@ class Analyser:
             ratio = build_time / total_size
             subtree = self._dependency_graph.traverse_pre_order(label)
             for subtree_label in subtree:
-                current = self._dependency_graph.get_attribute(
-                    subtree_label, self.TU_BUILD_TIME_TO_SIZE_RATIO, default=0)
-                current += ratio
-                self._dependency_graph.set_attribute(
-                    subtree_label,
-                    self.TU_BUILD_TIME_TO_SIZE_RATIO,
-                    current)
+                if not self._is_pch_dependency(label, subtree_label):
+                    current = self._dependency_graph.get_attribute(
+                        subtree_label, self.TU_BUILD_TIME_TO_SIZE_RATIO, default=0)
+                    current += ratio
+                    self._dependency_graph.set_attribute(
+                        subtree_label,
+                        self.TU_BUILD_TIME_TO_SIZE_RATIO,
+                        current)
 
     def run_full_analysis(self):
         """Calculates all available metrics for the graph"""

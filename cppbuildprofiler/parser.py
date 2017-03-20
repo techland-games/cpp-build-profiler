@@ -40,12 +40,13 @@ class _Channel_state:
                 self.label = new_label
 
     _PROJECT_PATTERN = re.compile(r'^\d+>[^:]+:\s+Project:\s+([^,]+),')
-    _CPP_FILE_PATTERN = re.compile(r'^\d+>\s*(\w+\.c((pp)|(xx))?)')
+    _CPP_FILE_PATTERN = re.compile(r'^\d+>\s*([\w\-]+\.c((pp)|(xx))?)')
     _DEPENDENCY_PATTERN = re.compile(r'^\d+>\s*Note: including file:(\s+)(.*)$')
     _TIME_PATTERN = re.compile(r'^\d+>\s*time[^=]+=(\d+\.\d+)s[^\[]+\[([^\]]+)\]')
     _CL_PATTERN = re.compile(r'^\d+>\s*(cl\s+/c[^$]+)$')
-    _CL_CPP_FILENAME_PATTERN = re.compile(r'\s(\w[\w/\\]+\.c((pp)|(xx))?)')
-    _CL_PCH_USE_PATTERN = re.compile(r'/Yu\s*[\'"]?([^\'"\s]+)')
+    _CL_CPP_FILENAME_PATTERN = re.compile(r'\s[\'"]?(\w[\w\-/\\]+\.c((pp)|(xx))?)')
+    _CL_USE_PCH_PATTERN = re.compile(r'/Yu\s*[\'"]?([^\'"\s]+)')
+    _CL_CREATE_PCH_PATTERN = re.compile(r'/Yc\s*[\'"]?([^\'"\s]+)')
     _CPP_EXTENSION_PATTERN = re.compile(r'\.c((pp)|(xx))?$')
 
     def __init__(self):
@@ -54,7 +55,8 @@ class _Channel_state:
         self._current_node = None
         self._cl_command = None
         self._cl_files = None
-        self._pch = None
+        self._cl_use_pch = None
+        self._cl_create_pch = None
 
     @classmethod
     def _unique_label(cls, absolute_path, dependency_graph):
@@ -72,41 +74,33 @@ class _Channel_state:
         for n in self._nodes.values():
             absolute_path = n.label
             n.label = self._unique_label(absolute_path, dependency_graph)
-            n.attributes[Analyser.ABSOLUTE_PATH_KEY] = absolute_path
             if dependency_graph.has_node(n.label):
-                logging.warn('Ignoring duplicated cpp file label "%s"',
-                             n.label)
+                logging.warning('Ignoring duplicated cpp file label "%s"',
+                                n.label)
                 continue
+
+            n.attributes[Analyser.ABSOLUTE_PATH_KEY] = absolute_path
+            if self._cl_use_pch:
+                n.attributes[Analyser.USE_PCH_KEY] = self._cl_use_pch
+            if self._cl_create_pch:
+                n.attributes[Analyser.CREATE_PCH_KEY] = self._cl_create_pch
             logging.debug('Adding top level file %s %s',
                           n.label, n.attributes)
             dependency_graph.add_top_level_node(
                 n.label,
                 **n.attributes)
-            if self._pch:
-                dependency_graph.add_dependency_node(
-                    n.label,
-                    self._pch
-                    )
+
             for (parent, child) in n.dependencies:
                 parent = self._unique_label(parent, dependency_graph)
                 child_path = child
                 child = self._unique_label(child_path, dependency_graph)
                 attributes = {Analyser.ABSOLUTE_PATH_KEY: child_path}
-                if self._pch and dependency_graph.has_dependency(self._pch, child):
-                    logging.debug('Eliminating explicit dependency %s -> %s as %s '
-                                  'is included through the precompiled header %s',
-                                  parent,
-                                  child,
-                                  child,
-                                  self._pch
-                                  )
-                else:
-                    logging.debug('Adding dependency %s -> %s %s', parent, child, attributes)
-                    dependency_graph.add_dependency_node(
-                        parent,
-                        child,
-                        **attributes
-                        )
+                logging.debug('Adding dependency %s -> %s %s', parent, child, attributes)
+                dependency_graph.add_dependency_node(
+                    parent,
+                    child,
+                    **attributes
+                    )
         self._nodes.clear()
 
     def _handle_project_call(self, project, dependency_graph):
@@ -121,16 +115,27 @@ class _Channel_state:
             lambda m: os.path.basename(unify_path(m[0])), cl_files))
         self._cl_files = cl_files
 
+        if not cl_files:
+            raise RuntimeError('Failed to parse cpp files in command %s' % command)
+
         cl_no_files = re.sub(self._CL_CPP_FILENAME_PATTERN, '', command)
         self._cl_command = cl_no_files
 
-        cl_pch_use = re.findall(self._CL_PCH_USE_PATTERN, command)
-        if cl_pch_use:
-            if len(cl_pch_use) > 1:
+        cl_use_pch = re.findall(self._CL_USE_PCH_PATTERN, command)
+        if cl_use_pch:
+            if len(cl_use_pch) > 1:
                 raise RuntimeError('Unexpected multiple precompiled-header use switches')
-            self._pch = os.path.basename(unify_path(cl_pch_use[0]))
+            self._cl_use_pch = os.path.basename(unify_path(cl_use_pch[0]))
         else:
-            self._pch = None
+            self._cl_use_pch = None
+
+        cl_create_pch = re.findall(self._CL_CREATE_PCH_PATTERN, command)
+        if cl_create_pch:
+            if len(cl_create_pch) > 1:
+                raise RuntimeError('Unexpected multiple precompiled-header create switches')
+            self._cl_create_pch = os.path.basename(unify_path(cl_create_pch[0]))
+        else:
+            self._cl_create_pch = None
 
     def _handle_cpp_filename(self, filename):
         label = os.path.basename(unify_path(filename))

@@ -106,38 +106,6 @@ class TestDependency(unittest.TestCase):
         self.assertEqual(depgraph.get_attribute('a.cpp', 'intattr'), 1)
         self.assertEqual(depgraph.get_attribute('a.cpp', 'charattr'), 'a')
 
-    def test_removes_matching_nodes_by_label(self):
-        depgraph = DependencyGraph()
-        depgraph.add_top_level_node('a.cpp', attr='I love doughnuts!')
-        depgraph.add_top_level_node('a.hpp', attr='I love doughnuts!')
-        depgraph.add_top_level_node('b.cpp', attr='Americans prefer donuts...')
-
-        depgraph.remove_matching_nodes(label='c(pp)?$')
-
-        self.assertEqual(depgraph._graph.nodes(), [depgraph._ROOT_NODE_LABEL, 'a.hpp'])
-
-    def test_removes_matching_nodes_by_attribute(self):
-        depgraph = DependencyGraph()
-        depgraph.add_top_level_node('a.cpp', attr='I love doughnuts!')
-        depgraph.add_top_level_node('a.hpp', attr='I love doughnuts!')
-        depgraph.add_top_level_node('b.cpp', attr='Americans prefer donuts...')
-
-        depgraph.remove_matching_nodes(attr='dough')
-
-        self.assertEqual(depgraph._graph.nodes(), [depgraph._ROOT_NODE_LABEL,'b.cpp'])
-
-    def test_removes_matching_nodes_by_all(self):
-        depgraph = DependencyGraph()
-        depgraph.add_top_level_node('a.cpp', attr='I love doughnuts!')
-        depgraph.add_top_level_node('a.hpp', attr='I love doughnuts!')
-        depgraph.add_top_level_node('b.cpp', attr='Americans prefer donuts...')
-
-        depgraph.remove_matching_nodes(label='c(pp)?$', attr=r'^I\slove')
-
-        self.assertEqual(sorted(depgraph._graph.nodes()), [depgraph._ROOT_NODE_LABEL,
-                                                           'a.hpp',
-                                                           'b.cpp'])
-
     def test_removes_dependencies_by_predicate(self):
         depgraph = DependencyGraph()
         depgraph.add_top_level_node('bad-parent')
