@@ -140,7 +140,7 @@ class TestParser(unittest.TestCase):
             
             nodes = graph.nodes()
             self.assertEqual(sorted(nodes), sorted([
-                depgraph._ROOT_NODE_LABEL,
+                depgraph.ROOT_NODE_LABEL,
                 'test.cpp',
                 'test.hpp',
                 'test2.hpp',
@@ -152,31 +152,31 @@ class TestParser(unittest.TestCase):
 
             edges = graph.edges()
             self.assertEqual(sorted(edges), sorted([
-                (depgraph._ROOT_NODE_LABEL, 'test.cpp'),
+                (depgraph.ROOT_NODE_LABEL, 'test.cpp'),
                 ('test.cpp', 'test.hpp'),
                 ('test.cpp', 'test2.hpp'),
-                (depgraph._ROOT_NODE_LABEL, 'stdafx.cpp'),
+                (depgraph.ROOT_NODE_LABEL, 'stdafx.cpp'),
                 ('stdafx.cpp', 'stdafx.h'),
                 ('stdafx.h', 'test-lib.hpp'),
                 ('stdafx.h', 'test-lib2.hpp'),
                 ]))
 
             test_cpp_node = graph.node['test.cpp']
-            self.assertEqual(test_cpp_node[Analyser.PROJECT_KEY], 'test')
+            self.assertEqual(test_cpp_node[Analyser.Attributes.PROJECT], 'test')
             self.assertEqual(
-                test_cpp_node[Analyser.COMPILATION_COMMAND_KEY],
+                test_cpp_node[Analyser.Attributes.COMPILATION_COMMAND],
                 r'''cl /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\" /Fd"Debug\vc140.pdb" /Gd /TP /analyze- /errorReport:prompt /Bt+ /showIncludes /nologo- /FC'''
                 )
             self.assertAlmostEqual(
-                test_cpp_node[Analyser.BUILD_TIME_KEY], 0.04414)
+                test_cpp_node[Analyser.Attributes.BUILD_TIME], 0.04414)
 
-            self.assertEqual(graph.node['stdafx.cpp'][Analyser.PROJECT_KEY], 'test-lib')
+            self.assertEqual(graph.node['stdafx.cpp'][Analyser.Attributes.PROJECT], 'test-lib')
 
             test_hpp_node = graph.node['test.hpp']
             self.assertNotIn(
-                Analyser.COMPILATION_COMMAND_KEY, test_hpp_node)
+                Analyser.Attributes.COMPILATION_COMMAND, test_hpp_node)
             self.assertNotIn(
-                Analyser.BUILD_TIME_KEY, test_hpp_node)
+                Analyser.Attributes.BUILD_TIME, test_hpp_node)
         finally:
             os.remove(log_path)
 
@@ -191,23 +191,23 @@ class TestParser(unittest.TestCase):
             
             nodes = graph.nodes()
             self.assertEqual(sorted(nodes), sorted([
-                depgraph._ROOT_NODE_LABEL,
+                depgraph.ROOT_NODE_LABEL,
                 'test.cpp',
                 'stdafx.cpp',
                 ]))
 
             edges = graph.edges()
             self.assertEqual(sorted(edges), sorted([
-                (depgraph._ROOT_NODE_LABEL, 'test.cpp'),
-                (depgraph._ROOT_NODE_LABEL, 'stdafx.cpp'),
+                (depgraph.ROOT_NODE_LABEL, 'test.cpp'),
+                (depgraph.ROOT_NODE_LABEL, 'stdafx.cpp'),
                 ]))
 
             test_cpp_node = graph.node['test.cpp']
 
             self.assertNotIn(
-                Analyser.COMPILATION_COMMAND_KEY, test_cpp_node)
+                Analyser.Attributes.COMPILATION_COMMAND, test_cpp_node)
             self.assertNotIn(
-                Analyser.BUILD_TIME_KEY, test_cpp_node)
+                Analyser.Attributes.BUILD_TIME, test_cpp_node)
         finally:
             os.remove(log_path)
 
@@ -222,7 +222,7 @@ class TestParser(unittest.TestCase):
             
             nodes = graph.nodes()
             self.assertEqual(sorted(nodes), sorted([
-                depgraph._ROOT_NODE_LABEL,
+                depgraph.ROOT_NODE_LABEL,
                 'test.cpp',
                 'test.cpp_1',
                 'test-same.hpp',
@@ -232,8 +232,8 @@ class TestParser(unittest.TestCase):
 
             edges = graph.edges()
             self.assertEqual(sorted(edges), sorted([
-                (depgraph._ROOT_NODE_LABEL, 'test.cpp'),
-                (depgraph._ROOT_NODE_LABEL, 'test.cpp_1'),
+                (depgraph.ROOT_NODE_LABEL, 'test.cpp'),
+                (depgraph.ROOT_NODE_LABEL, 'test.cpp_1'),
                 ('test.cpp', 'test-same.hpp'),
                 ('test.cpp', 'test-different.hpp'),
                 ('test.cpp_1', 'test-same.hpp'),
@@ -241,19 +241,19 @@ class TestParser(unittest.TestCase):
                 ]))
 
             self.assertAlmostEqual(
-                graph.node['test.cpp'][Analyser.ABSOLUTE_PATH_KEY],
+                graph.node['test.cpp'][Analyser.Attributes.ABSOLUTE_PATH],
                 r'd:\work\test\test\test.cpp')
             self.assertAlmostEqual(
-                graph.node['test-same.hpp'][Analyser.ABSOLUTE_PATH_KEY],
+                graph.node['test-same.hpp'][Analyser.Attributes.ABSOLUTE_PATH],
                 r'd:\work\test\test\test-same.hpp')
             self.assertAlmostEqual(
-                graph.node['test-different.hpp'][Analyser.ABSOLUTE_PATH_KEY],
+                graph.node['test-different.hpp'][Analyser.Attributes.ABSOLUTE_PATH],
                 r'd:\work\test\test\test-different.hpp')
             self.assertAlmostEqual(
-                graph.node['test.cpp_1'][Analyser.ABSOLUTE_PATH_KEY],
+                graph.node['test.cpp_1'][Analyser.Attributes.ABSOLUTE_PATH],
                 r'd:\work\test\test-other\test.cpp')
             self.assertAlmostEqual(
-                graph.node['test-different.hpp_1'][Analyser.ABSOLUTE_PATH_KEY],
+                graph.node['test-different.hpp_1'][Analyser.Attributes.ABSOLUTE_PATH],
                 r'd:\work\test\test-other\test-different.hpp')
 
         finally:
@@ -270,7 +270,7 @@ class TestParser(unittest.TestCase):
             
             nodes = graph.nodes()
             self.assertEqual(sorted(nodes), sorted([
-                depgraph._ROOT_NODE_LABEL,
+                depgraph.ROOT_NODE_LABEL,
                 'pch.cpp',
                 'pch.h',
                 'doesnt-use-pch.cpp',
@@ -279,26 +279,26 @@ class TestParser(unittest.TestCase):
                 'in-pch.h'
                 ]))
 
-            self.assertNotIn(Analyser.CREATE_PCH_KEY, graph.node[depgraph._ROOT_NODE_LABEL])
-            self.assertNotIn(Analyser.USE_PCH_KEY, graph.node[depgraph._ROOT_NODE_LABEL])
+            self.assertNotIn(Analyser.Attributes.CREATED_PCH, graph.node[depgraph.ROOT_NODE_LABEL])
+            self.assertNotIn(Analyser.Attributes.USED_PCH, graph.node[depgraph.ROOT_NODE_LABEL])
 
-            self.assertEqual(graph.node['pch.cpp'][Analyser.CREATE_PCH_KEY], 'pch.h')
-            self.assertNotIn(Analyser.USE_PCH_KEY, graph.node['pch.cpp'])
+            self.assertEqual(graph.node['pch.cpp'][Analyser.Attributes.CREATED_PCH], 'pch.h')
+            self.assertNotIn(Analyser.Attributes.USED_PCH, graph.node['pch.cpp'])
 
-            self.assertNotIn(Analyser.CREATE_PCH_KEY, graph.node['pch.h'])
-            self.assertNotIn(Analyser.USE_PCH_KEY, graph.node['pch.h'])
+            self.assertNotIn(Analyser.Attributes.CREATED_PCH, graph.node['pch.h'])
+            self.assertNotIn(Analyser.Attributes.USED_PCH, graph.node['pch.h'])
 
-            self.assertNotIn(Analyser.CREATE_PCH_KEY, graph.node['doesnt-use-pch.cpp'])
-            self.assertNotIn(Analyser.USE_PCH_KEY, graph.node['doesnt-use-pch.cpp'])
+            self.assertNotIn(Analyser.Attributes.CREATED_PCH, graph.node['doesnt-use-pch.cpp'])
+            self.assertNotIn(Analyser.Attributes.USED_PCH, graph.node['doesnt-use-pch.cpp'])
 
-            self.assertNotIn(Analyser.CREATE_PCH_KEY, graph.node['not-in-pch.h'])
-            self.assertNotIn(Analyser.USE_PCH_KEY, graph.node['not-in-pch.h'])
+            self.assertNotIn(Analyser.Attributes.CREATED_PCH, graph.node['not-in-pch.h'])
+            self.assertNotIn(Analyser.Attributes.USED_PCH, graph.node['not-in-pch.h'])
 
-            self.assertNotIn(Analyser.CREATE_PCH_KEY, graph.node['uses-pch.cpp'])
-            self.assertEqual('pch.h', graph.node['uses-pch.cpp'][Analyser.USE_PCH_KEY])
+            self.assertNotIn(Analyser.Attributes.CREATED_PCH, graph.node['uses-pch.cpp'])
+            self.assertEqual('pch.h', graph.node['uses-pch.cpp'][Analyser.Attributes.USED_PCH])
 
-            self.assertNotIn(Analyser.CREATE_PCH_KEY, graph.node['in-pch.h'])
-            self.assertNotIn(Analyser.USE_PCH_KEY, graph.node['in-pch.h'])
+            self.assertNotIn(Analyser.Attributes.CREATED_PCH, graph.node['in-pch.h'])
+            self.assertNotIn(Analyser.Attributes.USED_PCH, graph.node['in-pch.h'])
         finally:
             os.remove(log_path)
 

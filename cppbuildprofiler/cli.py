@@ -22,13 +22,12 @@ class Interpreter(cmd.Cmd):
     """
 
     _ALL_METRICS = [
-        Analyser.ABSOLUTE_PATH_KEY,
-        Analyser.TRANSLATION_UNITS_KEY,
-        Analyser.FILE_SIZE_KEY,
-        Analyser.TOTAL_SIZE_KEY,
-        Analyser.BUILD_TIME_KEY,
-        Analyser.TOTAL_BUILD_TIME_KEY,
-        Analyser.TU_BUILD_TIME_TO_SIZE_RATIO,
+        Analyser.Attributes.ABSOLUTE_PATH,
+        Analyser.Attributes.TRANSLATION_UNITS,
+        Analyser.Attributes.FILE_SIZE,
+        Analyser.Attributes.TOTAL_SIZE,
+        Analyser.Attributes.BUILD_TIME,
+        Analyser.Attributes.TOTAL_BUILD_TIME,
         ]
 
     def __init__(self):
@@ -204,7 +203,7 @@ class Interpreter(cmd.Cmd):
 
     def _is_thirdparty_dependency(self, codebase_root, parent, child):
         parent_path = self._depgraph.get_attribute(parent,
-                                                   Analyser.ABSOLUTE_PATH_KEY,
+                                                   Analyser.Attributes.ABSOLUTE_PATH,
                                                    codebase_root)
         return os.path.commonprefix([parent_path, codebase_root]) != codebase_root
 

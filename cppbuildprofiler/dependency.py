@@ -28,13 +28,13 @@ class DependencyGraph:
     being the files included in the compiled translation unit.
     """
 
-    _ROOT_NODE_LABEL = '__ROOT__'
+    ROOT_NODE_LABEL = '__ROOT__'
 
     def __init__(self, graph=None):
         if graph is None:
             graph = nx.DiGraph()
         self._graph = graph
-        self._graph.add_node(self._ROOT_NODE_LABEL)
+        self._graph.add_node(self.ROOT_NODE_LABEL)
 
     @classmethod
     def read(cls, path):
@@ -64,7 +64,7 @@ class DependencyGraph:
         if self._graph.has_node(label):
             raise RuntimeError('Duplicated node for label "%s"' % label)
         self._graph.add_node(label, **kwargs)
-        self._graph.add_edge(self._ROOT_NODE_LABEL, label)
+        self._graph.add_edge(self.ROOT_NODE_LABEL, label)
 
     def add_dependency_node(self, parent, label, **kwargs):
         """
@@ -83,7 +83,7 @@ class DependencyGraph:
 
     def get_top_level_nodes(self):
         """Returns an iterator over all the top-level nodes."""
-        return self._graph.successors_iter(self._ROOT_NODE_LABEL)
+        return self._graph.successors_iter(self.ROOT_NODE_LABEL)
 
     def get_node_immediate_dependencies(self, label):
         """Returns an iterator over the nodes immediate dependencies."""
@@ -109,7 +109,7 @@ class DependencyGraph:
         subgraph = self._graph.subgraph(nodes)
 
         if not add_dependants:
-            subgraph.add_path([self._ROOT_NODE_LABEL, label])
+            subgraph.add_path([self.ROOT_NODE_LABEL, label])
 
         return DependencyGraph(subgraph)
 
@@ -139,7 +139,7 @@ class DependencyGraph:
         predicate(parent_label, dependency_label) evaluates to True.
         """
         for parent in self._graph.nodes_iter():
-            if parent != self._ROOT_NODE_LABEL:
+            if parent != self.ROOT_NODE_LABEL:
                 for child in self._graph.successors(parent):
                     if predicate(parent, child):
                         logging.debug('Removing %s -> %s dependency', parent, child)
@@ -152,7 +152,7 @@ class DependencyGraph:
         """
         pre_nodes = self._graph.number_of_nodes()
         self._graph = self._graph.subgraph(
-            nx.dfs_postorder_nodes(self._graph, self._ROOT_NODE_LABEL))
+            nx.dfs_postorder_nodes(self._graph, self.ROOT_NODE_LABEL))
         logging.info('Removed %d orphaned nodes',
                      (pre_nodes - self._graph.number_of_nodes()))
 
@@ -182,7 +182,7 @@ class DependencyGraph:
         
     def _traverse(self, origin, method, include_origin, reverse):
         if not origin:
-            origin = self._ROOT_NODE_LABEL
+            origin = self.ROOT_NODE_LABEL
         graph = self._graph
         if reverse:
             graph = nx.reverse(graph)
