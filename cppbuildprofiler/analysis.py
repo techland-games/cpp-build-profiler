@@ -5,9 +5,9 @@
 
 import logging
 import os
+from collections import defaultdict, namedtuple
 import networkx as nx
 from cppbuildprofiler.dependency import DependencyGraph
-from collections import defaultdict
 
 def _pretty_filesize(size):
     reduced_size = float(size)
@@ -22,7 +22,8 @@ def _pretty_filesize(size):
 class Analyser:
     """Performs an optimisation-related analysis on a dependency graph."""
 
-    class Attributes:
+    class Attributes: # pylint: disable=too-few-public-methods
+        """Contains names of depgraph attributes with analyser metrics"""
         PROJECT = 'project'
         ABSOLUTE_PATH = 'absolutepath'
         COMPILATION_COMMAND = 'compilationcommand'
@@ -36,12 +37,12 @@ class Analyser:
         TRANSLATION_UNITS = 'translationunits'
         TOTAL_TRANSLATION_UNITS = 'totaltranslationunits'
         
+        def __init__(self):
+            pass
+        
     UNKNOWN_PROJECT_NAME = '__UNKNOWN__'
 
-    class Column:
-        def __init__(self, title, default_value):
-            self.title = title
-            self.default_value = default_value
+    Column = namedtuple('Column', ['title', 'default_value'])
 
     ROOT_COLUMNS = {
         Attributes.TOTAL_BUILD_TIME: Column('total build time [s]', 0.0),
@@ -168,7 +169,7 @@ class Analyser:
                     subtree_size = self._dependency_graph.get_attribute(internal,
                                                                         self.Attributes.FILE_SIZE)
                     for child in self._dependency_graph.get_node_immediate_dependencies(internal):
-                        assert(child in subtree_sizes)
+                        assert child in subtree_sizes
                         subtree_size += subtree_sizes[child]
                     subtree_sizes[internal] += subtree_size
                     current = self._dependency_graph.get_attribute(internal,
@@ -255,9 +256,11 @@ class Analyser:
         avg_build_time = ((total_build_time / total_tus) if total_tus > 0 else 0)
 
         for label in self._dependency_graph.traverse_pre_order():
-            tus = self._dependency_graph.get_attribute(label, self.Attributes.TOTAL_TRANSLATION_UNITS)
-            total_build_time = self._dependency_graph.get_attribute(label,
-                                                                    self.Attributes.TOTAL_BUILD_TIME)
+            tus = self._dependency_graph.get_attribute(label,
+                                                       self.Attributes.TOTAL_TRANSLATION_UNITS)
+            total_build_time = self._dependency_graph.get_attribute(
+                label,
+                self.Attributes.TOTAL_BUILD_TIME)
             avg_total_build_time = avg_build_time * tus
             self._dependency_graph.set_attribute(label,
                                                  self.Attributes.AGG_BUILD_TIME_DEV,
