@@ -23,13 +23,13 @@ class TestAnalysis(unittest.TestCase):
         - pch.h [file size: 50B]
         -- lib.hpp [file size: 20B]
         a.cpp [file size: 100B, build time: 3.0]
+        - other.hpp [file size: 50B]
         - a.hpp [file size: 10B]
         -- lib.hpp [file size: 20B]
-        - other.hpp [file size: 50B]
         b.cpp [file size: 30B, build time: 5.0, uses pch: pch.h]
+        - other.hpp [file size: 50B]
         - pch.h [file size: 50B]
         -- lib.hpp [file size: 20B]
-        - other.hpp [file size: 50B]
         '''
         self._files = {}
         self._dependency_graph = DependencyGraph()
@@ -48,15 +48,15 @@ class TestAnalysis(unittest.TestCase):
             **{Analyser.Attributes.BUILD_TIME: 3.0,
                Analyser.Attributes.ABSOLUTE_PATH: self._create_file('a.cpp', 100)})
         self._dependency_graph.add_dependency_node(
+            'a.cpp', 'other.hpp',
+            **{Analyser.Attributes.ABSOLUTE_PATH: self._create_file('other.hpp', 50)})
+        self._dependency_graph.add_dependency_node(
             'a.cpp', 'a.hpp',
             **{Analyser.Attributes.ABSOLUTE_PATH: self._create_file('a.hpp', 10)})
         libhpp_path = self._create_file('lib.hpp', 20)
         self._dependency_graph.add_dependency_node(
             'a.hpp', 'lib.hpp',
             **{Analyser.Attributes.ABSOLUTE_PATH: libhpp_path})
-        self._dependency_graph.add_dependency_node(
-            'a.cpp', 'other.hpp',
-            **{Analyser.Attributes.ABSOLUTE_PATH: self._create_file('other.hpp', 50)})
 
         self._dependency_graph.add_top_level_node(
             'b.cpp',
@@ -106,6 +106,10 @@ class TestAnalysis(unittest.TestCase):
             50)
 
     def test_total_file_sizes(self):
+        # adding dependency between b.cpp and a.hpp to check if a.hpp cashes in differently
+        # when lib.hpp is added through a pch file
+        self._dependency_graph.add_dependency_node('b.cpp', 'a.hpp')
+
         analyser = Analyser(self._dependency_graph)
         analyser.calculate_file_sizes()
         analyser.calculate_total_sizes()
@@ -118,21 +122,21 @@ class TestAnalysis(unittest.TestCase):
             50 + 20)
         self.assertEqual(
             self._dependency_graph.get_attribute('lib.hpp', Analyser.Attributes.TOTAL_SIZE),
-            20)
+            20 + 20)
 
         self.assertEqual(
             self._dependency_graph.get_attribute('a.cpp', Analyser.Attributes.TOTAL_SIZE),
             100 + 10 + 20 + 50)
         self.assertEqual(
             self._dependency_graph.get_attribute('a.hpp', Analyser.Attributes.TOTAL_SIZE),
-            10 + 20)
+            10 + 20 + 10)
 
         self.assertEqual(
             self._dependency_graph.get_attribute('b.cpp', Analyser.Attributes.TOTAL_SIZE),
-            30 + 50) # pch.h and lib.hpp not added
+            30 + 10 + 50) # pch.h and lib.hpp not added
         self.assertEqual(
             self._dependency_graph.get_attribute('other.hpp', Analyser.Attributes.TOTAL_SIZE),
-            50)
+            50 + 50)
 
     def test_total_build_times(self):
         analyser = Analyser(self._dependency_graph)

@@ -171,12 +171,12 @@ class Analyser:
                         assert(child in subtree_sizes)
                         subtree_size += subtree_sizes[child]
                     subtree_sizes[internal] += subtree_size
-                    self._dependency_graph.get_attribute(internal,
-                                                         self.Attributes.TOTAL_SIZE,
-                                                         0)
+                    current = self._dependency_graph.get_attribute(internal,
+                                                                   self.Attributes.TOTAL_SIZE,
+                                                                   0)
                     self._dependency_graph.set_attribute(internal,
                                                          self.Attributes.TOTAL_SIZE,
-                                                         subtree_size)
+                                                         current + subtree_size)
                 else:
                     subtree_sizes[internal] = 0
             top_level_total_size += self._dependency_graph.get_attribute(top_level,
