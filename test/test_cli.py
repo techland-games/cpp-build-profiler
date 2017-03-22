@@ -5,9 +5,10 @@ import unittest
 import tempfile
 import os
 import networkx as nx
-from cppbuildprofiler import __main__, DependencyGraph
+from cppbuildprofiler import DependencyGraph
+from cppbuildprofiler.cli import Interpreter
 
-class TestMain(unittest.TestCase):
+class TestCli(unittest.TestCase):
 
     _BUILD_LOG = r'''
 1>------ Rebuild All started: Project: test, Configuration: Debug x64 ------
@@ -233,9 +234,9 @@ class TestMain(unittest.TestCase):
             with open(log_file, 'w') as output_file:
                 output_file.write(self._BUILD_LOG)
 
-            interpreter = __main__.Interpreter()
+            interpreter = Interpreter()
             interpreter.onecmd('parse_vs_log %s' % log_file)
-            interpreter.onecmd(r'store %s' % pre_graph_file)
+            interpreter.onecmd('store %s' % pre_graph_file)
 
             result = DependencyGraph.read(pre_graph_file)
             self.assertTrue(result.has_node('test.cpp'))
@@ -249,7 +250,7 @@ class TestMain(unittest.TestCase):
             self.assertTrue(result.has_node('test-lib2.hpp'))
             self.assertTrue(result.has_node('memory'))
 
-            interpreter_load_store = __main__.Interpreter()
+            interpreter_load_store = Interpreter()
             interpreter_load_store.onecmd(r'load %s' % pre_graph_file)
             interpreter_load_store.onecmd(r'remove_thirdparty_dependencies D:/work/test')
             interpreter_load_store.onecmd(r'store %s' % graph_file)

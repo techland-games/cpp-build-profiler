@@ -9,6 +9,7 @@ files and their analysis metric values.
 import os
 import logging
 import itertools
+from collections import namedtuple
 import networkx as nx
 
 def unify_path(path):
@@ -28,13 +29,15 @@ class DependencyGraph:
     being the files included in the compiled translation unit.
     """
 
-    _ROOT_NODE_LABEL = '__ROOT__'
+    ROOT_NODE_LABEL = '__ROOT__'
+
+    Column = namedtuple('Column', ['title', 'default_value'])
 
     def __init__(self, graph=None):
         if graph is None:
             graph = nx.DiGraph()
         self._graph = graph
-        self._graph.add_node(self._ROOT_NODE_LABEL)
+        self._graph.add_node(self.ROOT_NODE_LABEL)
 
     @classmethod
     def read(cls, path):
@@ -64,7 +67,7 @@ class DependencyGraph:
         if self._graph.has_node(label):
             raise RuntimeError('Duplicated node for label "%s"' % label)
         self._graph.add_node(label, **kwargs)
-        self._graph.add_edge(self._ROOT_NODE_LABEL, label)
+        self._graph.add_edge(self.ROOT_NODE_LABEL, label)
 
     def add_dependency_node(self, parent, label, **kwargs):
         """
@@ -83,7 +86,12 @@ class DependencyGraph:
 
     def get_top_level_nodes(self):
         """Returns an iterator over all the top-level nodes."""
-        return self._graph.successors_iter(self._ROOT_NODE_LABEL)
+        return self._graph.successors_iter(self.ROOT_NODE_LABEL)
+
+    def get_dependency_nodes(self):
+        """Returns an iterator over all internal (dependency) nodes."""
+        top_level = frozenset(self.get_top_level_nodes())
+        return (label for label in self.traverse_pre_order() if label not in top_level)
 
     def get_node_immediate_dependencies(self, label):
         """Returns an iterator over the nodes immediate dependencies."""
@@ -109,9 +117,15 @@ class DependencyGraph:
         subgraph = self._graph.subgraph(nodes)
 
         if not add_dependants:
-            subgraph.add_path([self._ROOT_NODE_LABEL, label])
+            subgraph.add_edge(self.ROOT_NODE_LABEL, label)
 
         return DependencyGraph(subgraph)
+
+    def get_subtree(self, label):
+        """Gets the dfs traversal tree with the root at label as a DependencyGraph"""
+        subtree = nx.dfs_tree(self._graph, label)
+        subtree.add_edge(self.ROOT_NODE_LABEL, label)
+        return DependencyGraph(subtree)
 
     def has_node(self, label):
         """
@@ -139,7 +153,7 @@ class DependencyGraph:
         predicate(parent_label, dependency_label) evaluates to True.
         """
         for parent in self._graph.nodes_iter():
-            if parent != self._ROOT_NODE_LABEL:
+            if parent != self.ROOT_NODE_LABEL:
                 for child in self._graph.successors(parent):
                     if predicate(parent, child):
                         logging.debug('Removing %s -> %s dependency', parent, child)
@@ -152,7 +166,7 @@ class DependencyGraph:
         """
         pre_nodes = self._graph.number_of_nodes()
         self._graph = self._graph.subgraph(
-            nx.dfs_postorder_nodes(self._graph, self._ROOT_NODE_LABEL))
+            nx.dfs_postorder_nodes(self._graph, self.ROOT_NODE_LABEL))
         logging.info('Removed %d orphaned nodes',
                      (pre_nodes - self._graph.number_of_nodes()))
 
@@ -182,7 +196,7 @@ class DependencyGraph:
         
     def _traverse(self, origin, method, include_origin, reverse):
         if not origin:
-            origin = self._ROOT_NODE_LABEL
+            origin = self.ROOT_NODE_LABEL
         graph = self._graph
         if reverse:
             graph = nx.reverse(graph)
@@ -205,25 +219,21 @@ class DependencyGraph:
         """
         return self._traverse(origin, nx.dfs_preorder_nodes, include_origin, reverse)
 
-    def print_csv(self, stream, columns, column_separator):
+    def print_csv(self, stream, columns, column_separator, labels):
         """
         Prints the dependency graph in csv format to the provided stream.
 
         "columns" is a dictionary, where the keys are the attribute keys,
-        and the values are dictionary where "title" is the column label and
-        "default" is the value printed in case a node does not have the
-        relevant attribute.
+        and the values are Column objects.
         """
         column_separator = column_separator.replace('\\t', '\t')
         column_separator = column_separator.replace('\\n', '\n')
 
         stream.write('label%s' % column_separator)
-        stream.write('%s\n' %
-                     column_separator.join(column['title']
-                                           for column in columns.values()))
-        for label in self.traverse_pre_order():
+        stream.write('%s\n' % column_separator.join(column.title for column in columns.values()))
+        for label in labels:
             node = self._graph.node[label]
             stream.write('%s%s' % (label, column_separator))
             stream.write('%s\n' % 
-                         column_separator.join(str(node.get(metric, column['default']))
+                         column_separator.join(str(node.get(metric, column.default_value))
                                                for (metric, column) in columns.items()))

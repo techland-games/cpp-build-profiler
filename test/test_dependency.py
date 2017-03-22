@@ -20,7 +20,7 @@ class TestDependency(unittest.TestCase):
         graph = depgraph._graph
         nodes = graph.nodes()
         self.assertEqual(len(nodes), 3)
-        self.assertIn(depgraph._ROOT_NODE_LABEL, nodes)
+        self.assertIn(depgraph.ROOT_NODE_LABEL, nodes)
         self.assertIn('a.cpp', nodes)
         self.assertEqual(graph.node['a.cpp']['strattr'], 'value')
         self.assertEqual(graph.node['a.cpp']['intattr'], 2)
@@ -28,8 +28,8 @@ class TestDependency(unittest.TestCase):
         self.assertEqual(graph.node['b.cpp']['floatattr'], 3.5)
 
         self.assertEqual(len(graph.edges()), 2)
-        self.assertTrue(graph.has_edge(depgraph._ROOT_NODE_LABEL, 'a.cpp'))
-        self.assertTrue(graph.has_edge(depgraph._ROOT_NODE_LABEL, 'b.cpp'))
+        self.assertTrue(graph.has_edge(depgraph.ROOT_NODE_LABEL, 'a.cpp'))
+        self.assertTrue(graph.has_edge(depgraph.ROOT_NODE_LABEL, 'b.cpp'))
 
     def test_adds_dependency_nodes(self):
         depgraph = DependencyGraph()
@@ -50,7 +50,7 @@ class TestDependency(unittest.TestCase):
         graph = depgraph._graph
         nodes = graph.nodes()
         self.assertEqual(len(nodes), 7)
-        self.assertIn(depgraph._ROOT_NODE_LABEL, nodes)
+        self.assertIn(depgraph.ROOT_NODE_LABEL, nodes)
         self.assertIn('a.cpp', nodes)
         self.assertIn('a.h', nodes)
         self.assertEqual(graph.node['a.h']['intattr'], 3)
@@ -61,8 +61,8 @@ class TestDependency(unittest.TestCase):
         self.assertIn('bb.h', nodes)
 
         self.assertEqual(len(graph.edges()), 7)
-        self.assertTrue(graph.has_edge(depgraph._ROOT_NODE_LABEL, 'a.cpp'))
-        self.assertTrue(graph.has_edge(depgraph._ROOT_NODE_LABEL, 'b.cpp'))        
+        self.assertTrue(graph.has_edge(depgraph.ROOT_NODE_LABEL, 'a.cpp'))
+        self.assertTrue(graph.has_edge(depgraph.ROOT_NODE_LABEL, 'b.cpp'))        
         self.assertTrue(graph.has_edge('a.cpp', 'a.h'))
         self.assertTrue(graph.has_edge('a.cpp', 'aa.h'))
         self.assertTrue(graph.has_edge('b.cpp', 'b.h'))
@@ -132,10 +132,10 @@ class TestDependency(unittest.TestCase):
 
         self.assertEqual(
             sorted(subgraph._graph.nodes()),
-            sorted([DependencyGraph._ROOT_NODE_LABEL, 'b.hpp', 'c.hpp']))
+            sorted([DependencyGraph.ROOT_NODE_LABEL, 'b.hpp', 'c.hpp']))
         self.assertEqual(
             sorted(subgraph._graph.edges()),
-            sorted([(DependencyGraph._ROOT_NODE_LABEL, 'b.hpp'),
+            sorted([(DependencyGraph.ROOT_NODE_LABEL, 'b.hpp'),
                     ('b.hpp', 'c.hpp')]))
 
 if __name__ == '__main__':
