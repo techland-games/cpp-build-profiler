@@ -27,7 +27,7 @@ class Interpreter(cmd.Cmd):
         Analyser.Attributes.FILE_SIZE,
         Analyser.Attributes.TOTAL_SIZE,
         Analyser.Attributes.BUILD_TIME,
-        Analyser.Attributes.TOTAL_BUILD_TIME,
+        Analyser.Attributes.BUILD_TIME,
         ]
 
     def __init__(self):

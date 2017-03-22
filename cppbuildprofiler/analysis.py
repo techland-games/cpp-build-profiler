@@ -5,7 +5,7 @@
 
 import logging
 import os
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 import networkx as nx
 from cppbuildprofiler.dependency import DependencyGraph
 
@@ -32,39 +32,37 @@ class Analyser:
         BUILD_TIME = 'buildtime'
         FILE_SIZE = 'filesize'
         TOTAL_SIZE = 'totalsize'
-        TOTAL_BUILD_TIME = 'totalbuildtime'
         AGG_BUILD_TIME_DEV = 'avgbuildtimedev'
         TRANSLATION_UNITS = 'translationunits'
-        TOTAL_TRANSLATION_UNITS = 'totaltranslationunits'
         
         def __init__(self):
             pass
         
     UNKNOWN_PROJECT_NAME = '__UNKNOWN__'
 
-    Column = namedtuple('Column', ['title', 'default_value'])
-
     ROOT_COLUMNS = {
-        Attributes.TOTAL_BUILD_TIME: Column('total build time [s]', 0.0),
-        Attributes.TOTAL_TRANSLATION_UNITS: Column('total translation units', 0),
-        Attributes.TOTAL_SIZE: Column('total size [B]', 0),
+        Attributes.BUILD_TIME: DependencyGraph.Column('total build time [s]', 0.0),
+        Attributes.TRANSLATION_UNITS: DependencyGraph.Column('total translation units', 0),
+        Attributes.TOTAL_SIZE: DependencyGraph.Column('total size [B]', 0),
         }
 
     TOP_LEVEL_COLUMNS = {
-        Attributes.ABSOLUTE_PATH: Column('absolute path', None),
-        Attributes.COMPILATION_COMMAND: Column('compilation command', ''),
-        Attributes.BUILD_TIME: Column('build time [s]', 0.0),
-        Attributes.FILE_SIZE: Column('file size [B]', 0),
-        Attributes.TOTAL_SIZE: Column('total size [B]', 0),
+        Attributes.ABSOLUTE_PATH: DependencyGraph.Column('absolute path', None),
+        Attributes.BUILD_TIME: DependencyGraph.Column('build time [s]', 0.0),
+        Attributes.FILE_SIZE: DependencyGraph.Column('file size [B]', 0),
+        Attributes.TOTAL_SIZE: DependencyGraph.Column('total size [B]', 0),
         }
 
     INTERNAL_COLUMNS = {
-        Attributes.ABSOLUTE_PATH: Column('absolute path', None),
-        Attributes.TRANSLATION_UNITS: Column('number of dependent translation units', 0),
-        Attributes.FILE_SIZE: Column('file size [B]', 0),
-        Attributes.TOTAL_SIZE: Column('aggregated total size [B]', 0),
-        Attributes.TOTAL_BUILD_TIME: Column('total build time of dependants [s]', 0.0),
-        Attributes.AGG_BUILD_TIME_DEV: Column('aggregated build time deviation from avg [s]', 0.0),
+        Attributes.ABSOLUTE_PATH: DependencyGraph.Column('absolute path', None),
+        Attributes.TRANSLATION_UNITS: DependencyGraph.Column(
+            'number of dependent translation units', 0),
+        Attributes.FILE_SIZE: DependencyGraph.Column('file size [B]', 0),
+        Attributes.TOTAL_SIZE: DependencyGraph.Column('aggregated total size [B]', 0),
+        Attributes.BUILD_TIME: DependencyGraph.Column(
+            'total build time of dependants [s]', 0.0),
+        Attributes.AGG_BUILD_TIME_DEV: DependencyGraph.Column(
+            'aggregated build time deviation from avg [s]', 0.0),
         }
 
     def __init__(self, dependency_graph):
@@ -164,12 +162,13 @@ class Analyser:
         top_level_total_size = 0
         for top_level in self._dependency_graph.get_top_level_nodes():
             subtree_sizes = defaultdict(lambda: 0)
-            for internal in self._dependency_graph.traverse_post_order(top_level, True):
+
+            subtree = self._dependency_graph.get_subtree(top_level)
+            for internal in subtree.traverse_post_order(top_level, True):
                 if not self._is_pch_dependency(top_level, internal):
                     subtree_size = self._dependency_graph.get_attribute(internal,
                                                                         self.Attributes.FILE_SIZE)
-                    for child in self._dependency_graph.get_node_immediate_dependencies(internal):
-                        assert child in subtree_sizes
+                    for child in subtree.get_node_immediate_dependencies(internal):
                         subtree_size += subtree_sizes[child]
                     subtree_sizes[internal] += subtree_size
                     current = self._dependency_graph.get_attribute(internal,
@@ -194,8 +193,8 @@ class Analyser:
         nodes.
         """
         logging.info('Calculating total build times...')
-        for label in self._dependency_graph.traverse_post_order():
-            self._dependency_graph.remove_attribute(label, self.Attributes.TOTAL_BUILD_TIME)
+        for label in self._dependency_graph.get_dependency_nodes():
+            self._dependency_graph.remove_attribute(label, self.Attributes.BUILD_TIME)
 
         total_build_time = 0.0
         for label in self._dependency_graph.get_top_level_nodes():
@@ -207,14 +206,14 @@ class Analyser:
             for subtree_label in subtree:
                 if not self._is_pch_dependency(label, subtree_label):
                     current = self._dependency_graph.get_attribute(
-                        subtree_label, self.Attributes.TOTAL_BUILD_TIME, default=0.0)
+                        subtree_label, self.Attributes.BUILD_TIME, default=0.0)
                     current += build_time
                     self._dependency_graph.set_attribute(
                         subtree_label,
-                        self.Attributes.TOTAL_BUILD_TIME,
+                        self.Attributes.BUILD_TIME,
                         current)
         self._dependency_graph.set_attribute(DependencyGraph.ROOT_NODE_LABEL,
-                                             self.Attributes.TOTAL_BUILD_TIME,
+                                             self.Attributes.BUILD_TIME,
                                              total_build_time)
 
     def calculate_translation_units(self):
@@ -240,8 +239,8 @@ class Analyser:
                         self.Attributes.TRANSLATION_UNITS,
                         current)
         self._dependency_graph.set_attribute(DependencyGraph.ROOT_NODE_LABEL,
-                                             self.Attributes.TOTAL_TRANSLATION_UNITS,
-                                             0)
+                                             self.Attributes.TRANSLATION_UNITS,
+                                             total_translation_units)
 
     def calculate_agg_build_time_dev(self):
         """
@@ -250,21 +249,22 @@ class Analyser:
         all parents.
         """
         total_build_time = self._dependency_graph.get_attribute(DependencyGraph.ROOT_NODE_LABEL,
-                                                                self.Attributes.TOTAL_BUILD_TIME)
+                                                                self.Attributes.BUILD_TIME)
         total_tus = self._dependency_graph.get_attribute(DependencyGraph.ROOT_NODE_LABEL,
-                                                         self.Attributes.TOTAL_TRANSLATION_UNITS)
+                                                         self.Attributes.TRANSLATION_UNITS)
         avg_build_time = ((total_build_time / total_tus) if total_tus > 0 else 0)
 
         for label in self._dependency_graph.traverse_pre_order():
             tus = self._dependency_graph.get_attribute(label,
-                                                       self.Attributes.TOTAL_TRANSLATION_UNITS)
-            total_build_time = self._dependency_graph.get_attribute(
-                label,
-                self.Attributes.TOTAL_BUILD_TIME)
-            avg_total_build_time = avg_build_time * tus
-            self._dependency_graph.set_attribute(label,
-                                                 self.Attributes.AGG_BUILD_TIME_DEV,
-                                                 total_build_time - avg_total_build_time)
+                                                       self.Attributes.TRANSLATION_UNITS)
+            if tus is not None:
+                total_build_time = self._dependency_graph.get_attribute(
+                    label,
+                    self.Attributes.BUILD_TIME)
+                avg_total_build_time = avg_build_time * tus
+                self._dependency_graph.set_attribute(label,
+                                                     self.Attributes.AGG_BUILD_TIME_DEV,
+                                                     total_build_time - avg_total_build_time)
 
     def run_full_analysis(self):
         """Calculates all available metrics for the graph."""

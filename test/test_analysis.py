@@ -138,37 +138,48 @@ class TestAnalysis(unittest.TestCase):
             self._dependency_graph.get_attribute('other.hpp', Analyser.Attributes.TOTAL_SIZE),
             50 + 50)
 
+    def test_total_file_sizes_no_redundant(self):
+        depgraph = DependencyGraph()
+        depgraph.add_top_level_node('a.cpp', **{Analyser.Attributes.FILE_SIZE: 1})
+        depgraph.add_dependency_node('a.cpp', 'a.h', **{Analyser.Attributes.FILE_SIZE: 1})
+        depgraph.add_dependency_node('a.h', 'aa.h', **{Analyser.Attributes.FILE_SIZE: 1})
+        depgraph.add_dependency_node('a.cpp', 'aa.h', **{Analyser.Attributes.FILE_SIZE: 1})
+
+        analyser = Analyser(depgraph)
+        analyser.calculate_total_sizes()
+
+        self.assertEqual(depgraph.get_attribute(DependencyGraph.ROOT_NODE_LABEL, Analyser.Attributes.TOTAL_SIZE), 3)
+        self.assertEqual(depgraph.get_attribute('a.cpp', Analyser.Attributes.TOTAL_SIZE), 3)
+        self.assertEqual(depgraph.get_attribute('a.h', Analyser.Attributes.TOTAL_SIZE), 2)
+        self.assertEqual(depgraph.get_attribute('aa.h', Analyser.Attributes.TOTAL_SIZE), 1)
+
     def test_total_build_times(self):
         analyser = Analyser(self._dependency_graph)
         analyser.calculate_total_build_times()
 
-        self.assertFalse(self._dependency_graph.has_attribute(
-            'pch.cpp',
-            Analyser.Attributes.TOTAL_BUILD_TIME))
         self.assertEqual(
-            self._dependency_graph.get_attribute('pch.h', Analyser.Attributes.TOTAL_BUILD_TIME),
+            self._dependency_graph.get_attribute('pch.h', Analyser.Attributes.BUILD_TIME),
             10.0) # b.cpp not added
         self.assertEqual(
-            self._dependency_graph.get_attribute('lib.hpp', Analyser.Attributes.TOTAL_BUILD_TIME),
+            self._dependency_graph.get_attribute('lib.hpp', Analyser.Attributes.BUILD_TIME),
             10.0 + 3.0) # b.cpp not added
 
-        self.assertFalse(self._dependency_graph.has_attribute(
-            'a.cpp',
-            Analyser.Attributes.TOTAL_BUILD_TIME))
         self.assertAlmostEqual(
-            self._dependency_graph.get_attribute('a.hpp', Analyser.Attributes.TOTAL_BUILD_TIME),
+            self._dependency_graph.get_attribute('a.hpp', Analyser.Attributes.BUILD_TIME),
             3.0)
 
-        self.assertFalse(self._dependency_graph.has_attribute(
-            'b.cpp',
-            Analyser.Attributes.TOTAL_BUILD_TIME))
         self.assertEqual(
-            self._dependency_graph.get_attribute('other.hpp', Analyser.Attributes.TOTAL_BUILD_TIME),
+            self._dependency_graph.get_attribute('other.hpp', Analyser.Attributes.BUILD_TIME),
             3.0 + 5.0)
 
     def test_translation_units(self):
         analyser = Analyser(self._dependency_graph)
         analyser.calculate_translation_units()
+
+        self.assertEqual(
+            self._dependency_graph.get_attribute(DependencyGraph.ROOT_NODE_LABEL,
+                                                 Analyser.Attributes.TRANSLATION_UNITS),
+            3)
 
         self.assertFalse(self._dependency_graph.has_attribute(
             'pch.cpp',
