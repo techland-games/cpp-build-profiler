@@ -45,8 +45,8 @@ class _Channel_state:
     _TIME_PATTERN = re.compile(r'^\d+>\s*time[^=]+=(\d+\.\d+)s[^\[]+\[([^\]]+)\]')
     _CL_PATTERN = re.compile(r'^\d+>\s*(cl\s+/c[^$]+)$')
     _CL_CPP_FILENAME_PATTERN = re.compile(r'\s[\'"]?(\w[\w\-/\\]+\.c((pp)|(xx))?)')
-    _CL_USE_PCH_PATTERN = re.compile(r'/Yu\s*[\'"]?([^\'"\s]+)')
-    _CL_CREATE_PCH_PATTERN = re.compile(r'/Yc\s*[\'"]?([^\'"\s]+)')
+    _CL_USED_PCH_PATTERN = re.compile(r'/Yu\s*[\'"]?([^\'"\s]+)')
+    _CL_CREATED_PCH_PATTERN = re.compile(r'/Yc\s*[\'"]?([^\'"\s]+)')
     _CPP_EXTENSION_PATTERN = re.compile(r'\.c((pp)|(xx))?$')
 
     def __init__(self):
@@ -65,7 +65,7 @@ class _Channel_state:
         index = 0
         while dependency_graph.has_node(base + suffix) and \
             dependency_graph.get_attribute(
-                    base + suffix, Analyser.ABSOLUTE_PATH_KEY) != absolute_path:
+                    base + suffix, Analyser.Attributes.ABSOLUTE_PATH) != absolute_path:
             index += 1
             suffix = '_%d' % index
         return base + suffix
@@ -79,11 +79,11 @@ class _Channel_state:
                                 n.label)
                 continue
 
-            n.attributes[Analyser.ABSOLUTE_PATH_KEY] = absolute_path
+            n.attributes[Analyser.Attributes.ABSOLUTE_PATH] = absolute_path
             if self._cl_use_pch:
-                n.attributes[Analyser.USE_PCH_KEY] = self._cl_use_pch
+                n.attributes[Analyser.Attributes.USED_PCH] = self._cl_use_pch
             if self._cl_create_pch:
-                n.attributes[Analyser.CREATE_PCH_KEY] = self._cl_create_pch
+                n.attributes[Analyser.Attributes.CREATED_PCH] = self._cl_create_pch
             logging.debug('Adding top level file %s %s',
                           n.label, n.attributes)
             dependency_graph.add_top_level_node(
@@ -94,7 +94,7 @@ class _Channel_state:
                 parent = self._unique_label(parent, dependency_graph)
                 child_path = child
                 child = self._unique_label(child_path, dependency_graph)
-                attributes = {Analyser.ABSOLUTE_PATH_KEY: child_path}
+                attributes = {Analyser.Attributes.ABSOLUTE_PATH: child_path}
                 logging.debug('Adding dependency %s -> %s %s', parent, child, attributes)
                 dependency_graph.add_dependency_node(
                     parent,
@@ -121,7 +121,7 @@ class _Channel_state:
         cl_no_files = re.sub(self._CL_CPP_FILENAME_PATTERN, '', command)
         self._cl_command = cl_no_files
 
-        cl_use_pch = re.findall(self._CL_USE_PCH_PATTERN, command)
+        cl_use_pch = re.findall(self._CL_USED_PCH_PATTERN, command)
         if cl_use_pch:
             if len(cl_use_pch) > 1:
                 raise RuntimeError('Unexpected multiple precompiled-header use switches')
@@ -129,7 +129,7 @@ class _Channel_state:
         else:
             self._cl_use_pch = None
 
-        cl_create_pch = re.findall(self._CL_CREATE_PCH_PATTERN, command)
+        cl_create_pch = re.findall(self._CL_CREATED_PCH_PATTERN, command)
         if cl_create_pch:
             if len(cl_create_pch) > 1:
                 raise RuntimeError('Unexpected multiple precompiled-header create switches')
@@ -146,9 +146,9 @@ class _Channel_state:
 
         node = self._nodes[label]
         node.label = label
-        node.attributes = {Analyser.PROJECT_KEY: self._project}
+        node.attributes = {Analyser.Attributes.PROJECT: self._project}
         if self._cl_command:
-            node.attributes[Analyser.COMPILATION_COMMAND_KEY] = self._cl_command
+            node.attributes[Analyser.Attributes.COMPILATION_COMMAND] = self._cl_command
         self._dependency_stack = [node.label]
         self._current_node = node
 
@@ -178,9 +178,9 @@ class _Channel_state:
             lambda current: cpp_path if current == cpp_filename else current,
             self._dependency_stack))
 
-        if Analyser.BUILD_TIME_KEY not in node.attributes:
-            node.attributes[Analyser.BUILD_TIME_KEY] = 0.0
-        node.attributes[Analyser.BUILD_TIME_KEY] += build_time
+        if Analyser.Attributes.BUILD_TIME not in node.attributes:
+            node.attributes[Analyser.Attributes.BUILD_TIME] = 0.0
+        node.attributes[Analyser.Attributes.BUILD_TIME] += build_time
 
     def parse_line(self, line, dependency_graph):
         m = self._PROJECT_PATTERN.match(line)

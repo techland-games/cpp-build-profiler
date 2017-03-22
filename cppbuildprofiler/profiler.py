@@ -14,14 +14,14 @@ import os
 import argparse
 import functools
 from cppbuildprofiler.analysis import Analyser
-from cppbuildprofiler.dependency import unify_path
+from cppbuildprofiler.dependency import unify_path, DependencyGraph
 from cppbuildprofiler.parser import parse_vs_log
 
-def _is_thirdparty_dependency(dependency_graph, codebase_root, parent, _):
+def _is_thirdparty_dependency(dependency_graph, codebase_dir, parent, _):
     parent_path = dependency_graph.get_attribute(parent,
-                                                 Analyser.ABSOLUTE_PATH_KEY,
-                                                 codebase_root)
-    return os.path.commonprefix([parent_path, codebase_root]) != codebase_root
+                                                 Analyser.Attributes.ABSOLUTE_PATH,
+                                                 codebase_dir)
+    return os.path.commonprefix([parent_path, codebase_dir]) != codebase_dir
 
 def _profile(profile_dir, log_file, codebase_dir, column_separator):
     log_path = os.path.join(profile_dir, log_file)
@@ -38,29 +38,39 @@ def _profile(profile_dir, log_file, codebase_dir, column_separator):
     logging.info('Running analysis...')
     analyser.run_full_analysis()
 
-    logging.info('Removing third-party dependencies')
-    codebase_dir = unify_path(codebase_dir)
-    depgraph.remove_dependency_by_predicate(
-        functools.partial(_is_thirdparty_dependency, depgraph, codebase_dir))
-    depgraph.remove_orphans()
-    logging.info('Cleanup done. Dependency graph now has %d nodes and %d edges '
-                 '(%d nodes and %d edges removed)',
-                 depgraph.number_of_nodes(),
-                 depgraph.number_of_edges(),
-                 orig_nodes - depgraph.number_of_nodes(),
-                 orig_edges - depgraph.number_of_edges())
+    if codebase_dir is not None:
+        logging.info('Removing third-party dependencies')
+        codebase_dir = unify_path(codebase_dir)
+        depgraph.remove_dependency_by_predicate(
+            functools.partial(_is_thirdparty_dependency, depgraph, codebase_dir))
+        depgraph.remove_orphans()
+        logging.info('Cleanup done. Dependency graph now has %d nodes and %d edges '
+                     '(%d nodes and %d edges removed)',
+                     depgraph.number_of_nodes(),
+                     depgraph.number_of_edges(),
+                     orig_nodes - depgraph.number_of_nodes(),
+                     orig_edges - depgraph.number_of_edges())
+    else:
+        logging.info('Not removing third-party dependencies, as codebse_dir was not provided')
 
     gml_path = os.path.join(profile_dir, 'graph.gml')
     logging.info('Storing the graph in %s', gml_path)
     depgraph.write(gml_path)
 
-    csv_path = os.path.join(profile_dir, 'stats.csv')
-    logging.info('Storing stats in %s', csv_path)
-    with open(csv_path, 'w') as f:
-        columns = {key: value for (key, value)
-                   in Analyser.CSV_COLUMNS.items()
-                   if key != Analyser.COMPILATION_COMMAND_KEY}
-        depgraph.print_csv(f, columns, column_separator)
+    root_csv_path = os.path.join(profile_dir, 'root.csv')
+    logging.info('Storing root stats in %s', root_csv_path)
+    with open(root_csv_path, 'w') as f:
+        depgraph.print_csv(f, Analyser.ROOT_COLUMNS, column_separator, [DependencyGraph.ROOT_NODE_LABEL])
+
+    top_level_csv_path = os.path.join(profile_dir, 'top_level.csv')
+    logging.info('Storing top_level stats in %s', top_level_csv_path)
+    with open(top_level_csv_path, 'w') as f:
+        depgraph.print_csv(f, Analyser.TOP_LEVEL_COLUMNS, column_separator, depgraph.get_top_level_nodes())
+
+    dependency_csv_path = os.path.join(profile_dir, 'dependency.csv')
+    logging.info('Storing dependency stats in %s', dependency_csv_path)
+    with open(dependency_csv_path, 'w') as f:
+        depgraph.print_csv(f, Analyser.INTERNAL_COLUMNS, column_separator, depgraph.get_dependency_nodes())
 
 def main(args=None):
     logging.basicConfig(level=logging.INFO)
@@ -80,7 +90,6 @@ def main(args=None):
     parser.add_argument(
         '--codebase-dir', '-c',
         action='store',
-        required=True,
         help='path to the directory containing first-party code. Files '
              'outside of this directory will be considered third-party '
              'and will have their dependencies removed from the report.'
@@ -88,8 +97,8 @@ def main(args=None):
     parser.add_argument(
         '--column-separator',
         action='store',
-        help='column separator (defaults to ";")',
-        default=';')
+        help='column separator (defaults to ",")',
+        default=',')
 
     opts = parser.parse_args(args)
 
