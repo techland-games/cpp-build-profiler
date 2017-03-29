@@ -47,6 +47,7 @@ class Analyser:
         }
 
     TOP_LEVEL_COLUMNS = {
+        Attributes.PROJECT: DependencyGraph.Column('project', ''),
         Attributes.ABSOLUTE_PATH: DependencyGraph.Column('absolute path', None),
         Attributes.BUILD_TIME: DependencyGraph.Column('build time [s]', 0.0),
         Attributes.FILE_SIZE: DependencyGraph.Column('file size [B]', 0),
@@ -54,6 +55,7 @@ class Analyser:
         }
 
     INTERNAL_COLUMNS = {
+        Attributes.PROJECT: DependencyGraph.Column('project', ''),
         Attributes.ABSOLUTE_PATH: DependencyGraph.Column('absolute path', None),
         Attributes.TRANSLATION_UNITS: DependencyGraph.Column(
             'number of dependent translation units', 0),
@@ -105,26 +107,13 @@ class Analyser:
         Builds a dependency graph showing relations between projects. This is
         a networkx DiGraph, not a DependencyGraph.
         """
-        directory_to_project = {}
-        for cpp_node in self._dependency_graph.get_top_level_nodes():
-            directory = os.path.dirname(
-                self._dependency_graph.get_attribute(cpp_node, self.Attributes.ABSOLUTE_PATH))
-            project = self._dependency_graph.get_attribute(cpp_node, self.Attributes.PROJECT)
-            if directory in directory_to_project:
-                if directory_to_project[directory] != project:
-                    logging.error('cpp file %s from project %s in directory %s '
-                                  'inconsistent with the currently stored '
-                                  'project: %s', cpp_node, project, directory,
-                                  directory_to_project[project])
-            else:
-                directory_to_project[directory] = project
-
         graph = nx.DiGraph()
         for node in self._dependency_graph.traverse_pre_order():
             dependencies = self._dependency_graph.get_node_immediate_dependencies(node)
+            source = self._dependency_graph.get_attribute(node, self.Attributes.PROJECT)
             for dependency_node in dependencies:
-                source = self._guess_dependency_project(node, directory_to_project)
-                target = self._guess_dependency_project(dependency_node, directory_to_project)
+                target = self._dependency_graph.get_attribute(dependency_node,
+                                                              self.Attributes.PROJECT)
                 if source != target:
                     graph.add_edge(source, target)
         
@@ -248,6 +237,7 @@ class Analyser:
         of differences between the average build time and the build time of
         all parents.
         """
+        logging.info('Calculating aggregated build time deviation...')
         total_build_time = self._dependency_graph.get_attribute(DependencyGraph.ROOT_NODE_LABEL,
                                                                 self.Attributes.BUILD_TIME)
         total_tus = self._dependency_graph.get_attribute(DependencyGraph.ROOT_NODE_LABEL,
@@ -266,6 +256,31 @@ class Analyser:
                                                      self.Attributes.AGG_BUILD_TIME_DEV,
                                                      total_build_time - avg_total_build_time)
 
+    def guess_project_names(self):
+        """
+        Sets the project name attribute for all nodes, based on the directory the file
+        lies in.
+        """
+        logging.info('Guessing project names for headers...')
+        directory_to_project = {}
+        for cpp_node in self._dependency_graph.get_top_level_nodes():
+            directory = os.path.dirname(
+                self._dependency_graph.get_attribute(cpp_node, self.Attributes.ABSOLUTE_PATH))
+            project = self._dependency_graph.get_attribute(cpp_node, self.Attributes.PROJECT)
+            if directory in directory_to_project:
+                if directory_to_project[directory] != project:
+                    logging.error('cpp file %s from project %s in directory %s '
+                                  'inconsistent with the currently stored '
+                                  'project: %s', cpp_node, project, directory,
+                                  directory_to_project[project])
+            else:
+                directory_to_project[directory] = project
+
+        for node in self._dependency_graph.traverse_pre_order():
+            self._dependency_graph.set_attribute(node, self.Attributes.PROJECT,
+                                                 self._guess_dependency_project(
+                                                     node, directory_to_project))
+
     def run_full_analysis(self):
         """Calculates all available metrics for the graph."""
         self.calculate_file_sizes()
@@ -273,3 +288,4 @@ class Analyser:
         self.calculate_total_build_times()
         self.calculate_translation_units()
         self.calculate_agg_build_time_dev()
+        self.guess_project_names()

@@ -19,6 +19,7 @@ def unify_path(path):
     """
     path = os.path.normpath(path)
     path = os.path.normcase(path)
+    path = path.replace('\\', '/')
     return path
 
 class DependencyGraph:

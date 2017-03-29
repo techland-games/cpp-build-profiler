@@ -240,21 +240,21 @@ class TestParser(unittest.TestCase):
                 ('test.cpp_1', 'test-different.hpp_1'),
                 ]))
 
-            self.assertAlmostEqual(
+            self.assertEqual(
                 graph.node['test.cpp'][Analyser.Attributes.ABSOLUTE_PATH],
-                r'd:\work\test\test\test.cpp')
-            self.assertAlmostEqual(
+                r'd:/work/test/test/test.cpp')
+            self.assertEqual(
                 graph.node['test-same.hpp'][Analyser.Attributes.ABSOLUTE_PATH],
-                r'd:\work\test\test\test-same.hpp')
-            self.assertAlmostEqual(
+                r'd:/work/test/test/test-same.hpp')
+            self.assertEqual(
                 graph.node['test-different.hpp'][Analyser.Attributes.ABSOLUTE_PATH],
-                r'd:\work\test\test\test-different.hpp')
-            self.assertAlmostEqual(
+                r'd:/work/test/test/test-different.hpp')
+            self.assertEqual(
                 graph.node['test.cpp_1'][Analyser.Attributes.ABSOLUTE_PATH],
-                r'd:\work\test\test-other\test.cpp')
-            self.assertAlmostEqual(
+                r'd:/work/test/test-other/test.cpp')
+            self.assertEqual(
                 graph.node['test-different.hpp_1'][Analyser.Attributes.ABSOLUTE_PATH],
-                r'd:\work\test\test-other\test-different.hpp')
+                r'd:/work/test/test-other/test-different.hpp')
 
         finally:
             os.remove(log_path)

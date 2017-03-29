@@ -22,12 +22,13 @@ class Interpreter(cmd.Cmd):
     """
 
     _ALL_METRICS = [
+        Analyser.Attributes.PROJECT,
         Analyser.Attributes.ABSOLUTE_PATH,
         Analyser.Attributes.TRANSLATION_UNITS,
         Analyser.Attributes.FILE_SIZE,
         Analyser.Attributes.TOTAL_SIZE,
         Analyser.Attributes.BUILD_TIME,
-        Analyser.Attributes.BUILD_TIME,
+        Analyser.Attributes.AGG_BUILD_TIME_DEV,
         ]
 
     def __init__(self):
@@ -259,7 +260,12 @@ class Interpreter(cmd.Cmd):
                             action='store',
                             help='file to print out to',
                             required=False)
+        parser.add_argument('--nodes', '-n',
+                            help='nodes to print',
+                            choices=['root', 'top-level', 'dependency'],
+                            required=True)
         parser.add_argument('--metrics', '-m',
+                            action='store',
                             help='metrics to print (space separated)',
                             nargs='*',
                             choices=self._ALL_METRICS)
@@ -289,7 +295,20 @@ class Interpreter(cmd.Cmd):
                 raise RuntimeError('Specify --all-metrics to print all metrics '
                                    'or a list of metrics after --metrics')
 
-            columns = {metric : Analyser.CSV_COLUMNS[metric] for metric in metrics}
+            if opts.nodes == 'root':
+                available_columns = Analyser.ROOT_COLUMNS
+                labels = [DependencyGraph.ROOT_NODE_LABEL]
+            elif opts.nodes == 'top-level':
+                available_columns = Analyser.TOP_LEVEL_COLUMNS
+                labels = self._depgraph.get_top_level_nodes()
+            elif opts.nodes == 'dependency':
+                available_columns = Analyser.INTERNAL_COLUMNS
+                labels = self._depgraph.get_dependency_nodes()
+            else:
+                assert(False), 'Unexpected nodes value: %s' % opts.nodes
+
+            columns = {metric : available_columns[metric]
+                       for metric in metrics if metric in available_columns}
 
             if opts.out:
                 stream = open(opts.out, 'w')
@@ -300,7 +319,8 @@ class Interpreter(cmd.Cmd):
                 self._depgraph.print_csv(
                     stream,
                     columns,
-                    opts.column_separator)
+                    opts.column_separator,
+                    labels)
         except SystemExit:
             return
 
