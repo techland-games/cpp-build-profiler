@@ -40,14 +40,14 @@ class _Channel_state:
                 self.label = new_label
 
     _PROJECT_PATTERN = re.compile(r'^\d+>[^:]+:\s+Project:\s+([^,]+),')
-    _CPP_FILE_PATTERN = re.compile(r'^\d+>\s*([\w\-]+\.c((pp)|(xx))?)')
+    _CPP_FILE_PATTERN = re.compile(r'^\d+>\s*([\w\-\+]+\.c((pp)|(xx)|(c)|(p))?)')
     _DEPENDENCY_PATTERN = re.compile(r'^\d+>\s*Note: including file:(\s+)(.*)$')
     _TIME_PATTERN = re.compile(r'^\d+>\s*time[^=]+=(\d+\.\d+)s[^\[]+\[([^\]]+)\]')
     _CL_PATTERN = re.compile(r'^\d+>\s*(cl\s+/c[^$]+)$')
-    _CL_CPP_FILENAME_PATTERN = re.compile(r'\s[\'"]?(\w[\w\-/\\]+\.c((pp)|(xx))?)')
+    _CL_CPP_FILENAME_PATTERN = re.compile(r'\s[\'"]?(\w:?[\w\-\+/\\]+\.c((pp)|(xx)|(c)|(p))?)')
     _CL_USED_PCH_PATTERN = re.compile(r'/Yu\s*[\'"]?([^\'"\s]+)')
     _CL_CREATED_PCH_PATTERN = re.compile(r'/Yc\s*[\'"]?([^\'"\s]+)')
-    _CPP_EXTENSION_PATTERN = re.compile(r'\.c((pp)|(xx))?$')
+    _CPP_EXTENSION_PATTERN = re.compile(r'\.c((pp)|(xx)|(c)|(p))?$')
 
     def __init__(self):
         self._project = None

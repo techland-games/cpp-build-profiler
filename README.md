@@ -3,37 +3,42 @@ Techland C++ Build Profiler
 
 A tool that attempts to facilitate profiling C++ builds.
 
+For the moment it only supports Visual C++ builds, but other platforms could be easily added.
+
 Getting started
 ---------------
 
-You can launch the command line interface by running `cpp-build-profiler`. You can see
-a list of available commands by running `help` or `help _command_` for help on a specific
-command.
-
 A typical workflow in a Visual Studio project could look like this.
 
+0. Install cpp-build-profiler using PIP `pip install cppbuildprofiler`
 0. Add `/Bt+ /showIncludes /nologo- /FC` to your compiler options in `C/C++ -> Command Line ->
 Additional Options`
-0. Rebuild the project, copy the build output to a file
-0. Open up the command prompt and run `cpp-build-profiler`
-0. Run `parse_vs_log <i>path/to/the/log/file</i>`
-0. Clean-up some unnecessary files by running `remove_nodes --absolute-path PATTERN` and
-`remove_thirdparty_dependencies PATH_TO_CODEBASE_ROOT` - the first command will remove files
-that were only included by precompiled headers (checked by looking for `PATTERN`
-in their label - defaults to `stdafx.h`), the other will remove files included by files 
-from outside of your codebase (e.g. this will not remove <vector>, but will remove <xmemory>)
-0. Run `analyse` - this will run statistics on the remaining files
-0. Run `store PATH_TO_GRAPH.gml` - this will store the dependency graph in a .gml file. You can
-then load this graph by calling `load PATH_TO_GRAPH.gml` or import it into a graph visualisation
-tool, such as [Cytoscape](http://www.cytoscape.org/download.php)
-0. You can then print the statistics for all files in the dependency graph by executing
-`print -M -o PATH_TO_OUTPUT.csv` and import the data into a spreadsheet. I recommend promptly adding
-an `approximate time spent [s]` column into such spreadsheet, which will multiply values from the
-`total subtree size [B]` and `total translation unit build time to size ratio [s/B]` columns. I find it
-to be a good indicator of the impact a header file has on the overall build time.
-0. If you wish to generate a subgraph of the current dependency graph you can use the `subgraph`
-command. For instance, if you wish to get all dependencies of _graphics.h_ run
-`subgraph graphics.h --dependencies`. Similarly you could employ `--dependants` or both to generate
-a subgraph of all files dependent and being-depended-upon. Bear in mind that the subgraph becoms
-the now active graph and as such needs to be `store`d for later access. If you want to access the
-full graph you'll need to `load` it.
+0. Rebuild the project, copy the build output to a file, put that file in a directory, say `profile/log.txt`.
+0. Open up the command prompt and run
+`cppbuildprofiler PROFILE_DIR --log-file LOG_FILE_NAME --codebase-dir ABSOLUTE/PATH/TO/SOURCE/DIR`.
+You can add the `--column-separator` option, depending on the spreadsheet tool you use. For Google Spreadsheet
+use `--column-separator '\t'`.
+0. Your profile directory will now (hopefully) contain a number of files (for an explanation of metrics see
+the "[Metrics](#metrics)" section):
+	* *root.csv* - summary of the whole build
+	* *top_level.csv* - information of build times of specific c++ files
+	* *dependency.csv* - information about `#include`d files
+	* *graph.gml* - the project's dependency graph
+0. You can now copy the *.csv* file contents into a spreadsheet programme and try to identify the heavy-hitters
+in your build. I personally found that the most useful metrics to start with are *aggregated build time deviation
+from avg* and *total build time of dependants* in the *dependency* file.
+0. After identifying dependencies that have the biggest impact on build times it can be useful to take a look
+at the dependency graph using a tool such as [Cytoscape](http://www.cytoscape.org/download.php). If your build
+contains a lot of files you can generate a subgraph to see only files related to the inspected file. This can be
+done using the `cppbuildprofiler-cli` command-line tool. See the "[Command-line tool](#cli)" section for instructions.
+0. Improve and repeat!
+
+<a name="metrics"></a>Metrics
+-----------------------------
+
+
+
+<a name="cli"></a>Command-line tool
+-----------------------------------
+
+
