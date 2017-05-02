@@ -1,20 +1,23 @@
+**Table of Contents**  *generated with [DocToc](http://doctoc.herokuapp.com/)*
 - [Techland C++ Build Profiler](#top)
 	- [Getting started](#gettingstarted)
 	- [Metrics](#metrics)
 		- [root metrics](#root)
 		- [top-level metrics](#toplevel)
 		- [dependency metrics](#dependency)
+	- [The cppbuildprofiler script](#script)
 	- [Command-line tool](#cli)
+	- [Third-party dependencies](#thirdparty)
 	
 <a name="top"></a>Techland C++ Build Profiler
-===========================
+=============================================
 
 A tool that attempts to facilitate profiling C++ builds.
 
 For the moment it only supports Visual C++ builds, but other platforms could be easily added.
 
 <a name="gettingstarted"></a>Getting started
----------------
+--------------------------------------------
 
 A typical workflow in a Visual Studio project could look like this.
 
@@ -109,6 +112,15 @@ large *aggregated total size*. Removing dependencies from such files often gives
 <a name="script"></a>The cppbuildprofiler script
 ------------------------------------------------
 
+The `cppbuildprofiler` script loads a compilation log, builds a dependency graph, analyses it and outputs a number of files:
+* *root.csv* - summary of the whole build
+* *top_level.csv* - information of build times of specific c++ files
+* *dependency.csv* - information about `#include`d files
+* *graph.gml* - the project's dependency graph
+
+The switches available may be printed out by running `cppbuildprofiler --help`. For information on the meaning of the
+CODEBASE-DIR in `--codebase-dir` see the [thirdparty dependencies](#thirdparty) section.
+
 <a name="cli"></a>Command-line tool
 -----------------------------------
 
@@ -136,3 +148,22 @@ Available commands are:
 
 <a name="thirdparty"></a>Third-party dependencies
 -------------------------------------------------
+
+Usually, we are not interested in dependencies introduced by headers included from third-party code.
+E.g. if we `#include <vector>` this dependency suffices in the graph, we don't need to see that it also includes
+`xmemory`, `yvals.h` and whatnot. `cppbuildprofiler` removes these automatically if provided with the `--codebase-dir`
+switch and `cppbuildprofiler-cli` removes them with the `remove_thirdparty_dependencies` command. Removing third-party
+dependencies should be done *after* running `analyse` as otherwise the *total size* and *aggregated total size* metrics
+will be incorrect.
+
+A dependency is considered to be third-party if it lays outside the provided *CODEBASE-DIR*. Let's consider the following
+scenario:
+
+0. our code lays in 'd:/code/profiled-project',
+0. it includes 'utility-lib.h' from 'd:/code/utility-lib',
+0. 'utility-lib.h' includes 'detail.h' from the same directory. This file is *NOT* `#include`d by any of our source files,
+0. 'utility-lib.h' also includes 'utility-lib-fwd.h' which *IS* `#include`d by our source files,
+0. we run `cppbuildprofiler ... --codebase-dir d:/code/profiled-project`.
+
+The resulting analysis will contain information about *utility-lib.h* and *utility-lib-fwd.h* as they are both immediate
+dependencies of our code, but it won't contain *detail.h* as it is a purely third-party dependency.
