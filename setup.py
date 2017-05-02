@@ -8,7 +8,7 @@ import setuptools
 
 distutils.core.setup(
     name='cppbuildprofiler',
-    version='0.4',
+    version='1.0',
     description='A tool that facilitates profiling C++ builds.',
     author='Mikolaj Radwan @ Techland',
     author_email='mikolaj.radwan@techland.pl',
