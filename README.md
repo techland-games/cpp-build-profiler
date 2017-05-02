@@ -1,19 +1,19 @@
-- [Techland C++ Build Profiler](#)
-	- [Getting started](#)
-	- [Metrics](#)
-		- [root metrics](#)
-		- [top-level metrics](#)
-		- [dependency metrics](#)
-	- [Command-line tool](#)
+- [Techland C++ Build Profiler](#top)
+	- [Getting started](#gettingstarted)
+	- [Metrics](#metrics)
+		- [root metrics](#root)
+		- [top-level metrics](#toplevel)
+		- [dependency metrics](#dependency)
+	- [Command-line tool](#cli)
 	
-Techland C++ Build Profiler
+<a name="top"></a>Techland C++ Build Profiler
 ===========================
 
 A tool that attempts to facilitate profiling C++ builds.
 
 For the moment it only supports Visual C++ builds, but other platforms could be easily added.
 
-Getting started
+<a name="gettingstarted"></a>Getting started
 ---------------
 
 A typical workflow in a Visual Studio project could look like this.
@@ -45,7 +45,7 @@ done using the `cppbuildprofiler-cli` command-line tool. See the "[Command-line 
 <a name="metrics"></a>Metrics
 -----------------------------
 
-### *root* metrics
+### <a name="root"></a>*root* metrics
 
 The root node is connected to all top-level nodes and aggregates the information there to provide a summary of
 the whole build.
@@ -56,7 +56,7 @@ be much larger than the actual project building time.
 * *total size [B]* - sum of *total size [B]* values of top-level files. This is the total number of bytes of code
 compiled.
 
-### *top-level* metrics
+### <a name="toplevel"></a>*top-level* metrics
 
 * *label* - useful when working with the dependency graph. Use this name to identify nodes. This is normally the
 filename, but duplicated files are suffixed with *_NUMBER*
@@ -69,7 +69,7 @@ subtree. Files included through precompiled-headers are excluded from this metri
 of the compiled code. Headers are assumed to be included only once, so if for some reason you have a file
 without an include guard and it should be included twice in the subtree, it will be counted only once.
 
-### *dependency* metrics
+### <a name="dependency"></a>*dependency* metrics
 
 * *label* - useful when working with the dependency graph. Use this name to identify nodes. This is normally the
 filename, but duplicated files are suffixed with *_NUMBER*
@@ -106,7 +106,33 @@ essentially tell you the impact a file has on the total build time. A possible w
 build times is to order a spreadsheet by the *aggregated build time deviation from avg* column and look at files with
 large *aggregated total size*. Removing dependencies from such files often gives good results.
 
+<a name="script"></a>The cppbuildprofiler script
+------------------------------------------------
+
 <a name="cli"></a>Command-line tool
 -----------------------------------
 
-<a name="thirdparty"></a>remove_thirdparty_dependencies
+The command-line tool, executed by running `cppbuildprofiler-cli` may be used to perform more tailor-made analyses than
+these done by default using `cppbuildprofiler`. Bear in mind that when working with the tool all commands apply changes
+to the current dependency graph in memory. If you generate a subgraph containing only the dependencies of some file, all
+its predecessors will be removed and to access them again you'll have to re-load the graph.
+
+Available commands are:
+
+* `help` - displays a list of available commands.
+* `help COMMAND` or `COMMAND -h` - displays help on the usage of COMMAND.
+* `parse_vs_log LOG_FILE` - parses a VisualC++ build log and creates a bare dependency graph.
+* `analyse` - runs a full analysis of the dependency graph (calculates all the metrics).
+* `remove_thirdparty_dependencies CODEBASE_ROOT` - removes [thirdparty dependencies](#thirdparty) from the graph. Note that this won't update the metrics.
+* `store GML_FILE` - stores the current dependency graph to a .gml file.
+* `load GML_FILE` - replaces the dependency graph in memory with the one loaded from the .gml file.
+* `get_project_dependency_graph FILE` - creates a dependency graph of projects and stores it in the .gml file specified. Note that this will not modify the dependency graph in any way.
+* `subgraph -o LABEL [--dependants] [--dependencies]` - the dependency graph in memory is replaced by its subgraph. The subgraph contains the node denoted by LABEL and
+	* if `--dependants` is specified: all the nodes that depend on that node
+	* if `--dependencies` is specified: all the nodes that the node depends on
+* `print` - prints the dependency graph nodes in csv format. Run with `-h` to see the available options.
+* `set_verbosity DEBUG|INFO` - changes the amount of logs the programme prints.
+* `shell COMMAND` - will execute COMMAND in the underlying shell.
+
+<a name="thirdparty"></a>Third-party dependencies
+-------------------------------------------------

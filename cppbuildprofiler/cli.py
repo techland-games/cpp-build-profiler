@@ -45,8 +45,9 @@ class Interpreter(cmd.Cmd):
     def onecmd(self, line):
         try:
             super().onecmd(line)
-        except Exception:
-            print(traceback.format_exc())
+        except Exception as e:
+            logging.error(e, exc_info=0)
+            logging.debug(traceback.format_exc())
 
     def do_shell(self, line):
         out = os.popen(line).read()
@@ -170,10 +171,6 @@ class Interpreter(cmd.Cmd):
 
     def _analyse_argparser(self):
         parser = argparse.ArgumentParser('runs the dependency graph analysis')
-        parser.add_argument(
-            '--update-only', '-u',
-            action='store_true',
-            help='update-only (don\'t re-calculate file size metrics)')
         return parser
 
     def help_analyse(self):
@@ -183,10 +180,7 @@ class Interpreter(cmd.Cmd):
         parser = self._analyse_argparser()
         try:
             opts = parser.parse_args(self._argv(params))
-            if opts.update_only:
-                Analyser(self._depgraph).update_analysis()
-            else:
-                Analyser(self._depgraph).run_full_analysis()
+            Analyser(self._depgraph).run_full_analysis()
         except SystemExit:
             return
 
@@ -202,7 +196,7 @@ class Interpreter(cmd.Cmd):
     def help_remove_thirdparty_dependencies(self):
         self._remove_thirdparty_dependencies_argparser().print_help()
 
-    def _is_thirdparty_dependency(self, codebase_root, parent, child):
+    def _is_thirdparty_dependency(self, codebase_root, parent, _):
         parent_path = self._depgraph.get_attribute(parent,
                                                    Analyser.Attributes.ABSOLUTE_PATH,
                                                    codebase_root)
@@ -212,11 +206,21 @@ class Interpreter(cmd.Cmd):
         try:
             parser = self._remove_thirdparty_dependencies_argparser()
             opts = parser.parse_args(self._argv(params))
-            codebase_root = unify_path(opts.codebase_root)
+            codebase_root = unify_path(opts.codebase_root.strip('"\''))
+
+            orig_nodes = self._depgraph.number_of_nodes()
+            orig_edges = self._depgraph.number_of_edges()
 
             self._depgraph.remove_dependency_by_predicate(
                 functools.partial(self._is_thirdparty_dependency, codebase_root))
             self._depgraph.remove_orphans()
+
+            logging.info('Cleanup done. Dependency graph now has %d nodes and %d edges '
+                         '(%d nodes and %d edges removed)',
+                         self._depgraph.number_of_nodes(),
+                         self._depgraph.number_of_edges(),
+                         orig_nodes - self._depgraph.number_of_nodes(),
+                         orig_edges - self._depgraph.number_of_edges())
         except SystemExit:
             return
 
